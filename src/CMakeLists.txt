@@ -33,9 +33,9 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        addbroker.cpp
-        addbroker.h
-        addbroker.ui
+        brokerform.cpp
+        brokerform.h
+        brokerform.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

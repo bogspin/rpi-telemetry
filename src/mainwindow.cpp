@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "addbroker.h"
 
 #include <QtCore/QDateTime>
 #include <QtMqtt/QMqttClient>
@@ -18,13 +17,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     this->setStyleSheet("background-color: #5A5A5A;");
 
-    m_client = new QMqttClient(this);
+    newClient = new QMqttClient(this);
 //    m_client->setHostname(ui->lineEditHost->text());
 //    m_client->setPort(ui->spinBoxPort->value());
 
-    connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createAddBrokerWindow);
+    connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createBrokerForm);
 
-//    connect(m_client, &QMqttClient::stateChanged, this, &MainWindow::updateLogStateChange);
+    connect(newClient, &QMqttClient::stateChanged, this, &MainWindow::updateLogStateChange);
 //    connect(m_client, &QMqttClient::disconnected, this, &MainWindow::brokerDisconnected);
 
 //    connect(m_client, &QMqttClient::messageReceived, this, &MainWindow::addMessageToDB);
@@ -49,9 +48,29 @@ MainWindow::~MainWindow()
     qApp->quit();
 }
 
-void MainWindow::createAddBrokerWindow()
+void MainWindow::updateLogStateChange()
 {
-    auto subWindow = new AddBroker();
-    subWindow->setWindowTitle("Add MQTT Broker");
-    subWindow->show();
+    const QString content = QDateTime::currentDateTime().toString()
+                    + QLatin1String(": State Change")
+                    + QString::number(newClient->state())
+                    + QLatin1Char('\n');
+    qDebug() << content;
+}
+
+void MainWindow::createBrokerForm()
+{
+    brokerFormWindow = new BrokerForm();
+    brokerFormWindow->setWindowTitle("Add MQTT Broker");
+    brokerFormWindow->show();
+
+    connect(brokerFormWindow, &BrokerForm::buttonBox, this, &MainWindow::addClient);
+}
+
+void MainWindow::addClient(BrokerForm *form)
+{
+    newClient->setHostname(form->getHostName());
+    newClient->setPort(form->getPort());
+    newClient->connectToHost();
+
+    qDebug() << form->getHostName() << form->getPort();
 }
