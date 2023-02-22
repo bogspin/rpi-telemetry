@@ -7,12 +7,52 @@ BrokerForm::BrokerForm(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    client = new QMqttClient(parent);
+
+    connect(client, &QMqttClient::stateChanged,
+            this, &BrokerForm::emitOnStateChange);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &BrokerForm::okClicked);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &BrokerForm::cancelClicked);
 }
 
 void BrokerForm::okClicked()
 {
-    emit buttonBox(this);
+    client->setHostname(getHostName());
+    client->setPort(getPort());
+    client->connectToHost();
+}
+
+void BrokerForm::cancelClicked()
+{
+    this->close();
+}
+
+void BrokerForm::emitOnStateChange()
+{
+    const QString content = QDateTime::currentDateTime().toString()
+                    + QLatin1String(": State Change")
+                    + QString::number(client->state())
+                    + QLatin1Char('\n');
+    qDebug() << content;
+
+    switch (client->state()) {
+        case QMqttClient::ClientState::Disconnected: {
+            emit disconnected();
+            QString info = "Connection refused!";
+            QMessageBox::warning(this, "Disconnected", info);
+            break;
+        }
+        case QMqttClient::ClientState::Connecting: {
+            break;
+        }
+        case QMqttClient::ClientState::Connected: {
+            emit connected(client);
+            QString info = "Connection established to " + getHostName();
+            QMessageBox::information(this, "Connected", info);
+            this->close();
+        }
+        default: break;
+    }
 }
 
 QString BrokerForm::getHostName() const

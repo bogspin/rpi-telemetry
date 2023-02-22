@@ -15,15 +15,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->setStyleSheet("background-color: #5A5A5A;");
+    QMainWindow::showFullScreen();
+    this->setStyleSheet("background-color: #333333;");
 
-    newClient = new QMqttClient(this);
-//    m_client->setHostname(ui->lineEditHost->text());
-//    m_client->setPort(ui->spinBoxPort->value());
+    model = new QStringListModel(this);
+    ui->listView->setModel(model);
 
     connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createBrokerForm);
 
-    connect(newClient, &QMqttClient::stateChanged, this, &MainWindow::updateLogStateChange);
 //    connect(m_client, &QMqttClient::disconnected, this, &MainWindow::brokerDisconnected);
 
 //    connect(m_client, &QMqttClient::messageReceived, this, &MainWindow::addMessageToDB);
@@ -48,29 +47,42 @@ MainWindow::~MainWindow()
     qApp->quit();
 }
 
-void MainWindow::updateLogStateChange()
+void MainWindow::updateLogStateChange(QMqttClient *client)
 {
     const QString content = QDateTime::currentDateTime().toString()
                     + QLatin1String(": State Change")
-                    + QString::number(newClient->state())
+                    + QString::number(client->state())
                     + QLatin1Char('\n');
     qDebug() << content;
 }
 
 void MainWindow::createBrokerForm()
 {
-    brokerFormWindow = new BrokerForm();
-    brokerFormWindow->setWindowTitle("Add MQTT Broker");
+    brokerFormWindow = new BrokerForm(this);
+    brokerFormWindow->setWindowTitle("Add MQTT Client");
+    brokerFormWindow->setWindowState(Qt::WindowActive);
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect screenGeometry = screen->geometry();
+    int x = (screenGeometry.width() - brokerFormWindow->width()) / 2;
+    int y = (screenGeometry.height() - brokerFormWindow->height()) / 2;
+    brokerFormWindow->move(x, y);
     brokerFormWindow->show();
 
-    connect(brokerFormWindow, &BrokerForm::buttonBox, this, &MainWindow::addClient);
+    connect(brokerFormWindow, &BrokerForm::connected, this, &MainWindow::addClient);
+    connect(brokerFormWindow, &BrokerForm::disconnected, this, []{});
 }
 
-void MainWindow::addClient(BrokerForm *form)
+void MainWindow::addClient(QMqttClient *newClient)
 {
-    newClient->setHostname(form->getHostName());
-    newClient->setPort(form->getPort());
-    newClient->connectToHost();
+    // connect(newClient, &QMqttClient::stateChanged,
+    //         this, &MainWindow::updateLogStateChange(newClient));
 
-    qDebug() << form->getHostName() << form->getPort();
+    mqttClients.append(newClient);
+
+    if(model->insertRow(model->rowCount())) {
+        QModelIndex index = model->index(model->rowCount() - 1, 0);
+        model->setData(index, newClient->hostname());
+    }
+
+    qDebug() << newClient->hostname() << newClient->port();
 }

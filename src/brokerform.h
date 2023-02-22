@@ -2,6 +2,7 @@
 #define BROKERFORM_H
 
 #include <QWidget>
+#include <QMessageBox>
 #include <QtMqtt>
 
 QT_BEGIN_NAMESPACE
@@ -21,13 +22,17 @@ public:
     QString getPassword() const;
 
 signals:
-    void buttonBox(BrokerForm *form);
+    void connected(QMqttClient* client);
+    void disconnected();
 
 private slots:
     void okClicked();
+    void cancelClicked();
+    void emitOnStateChange();
 
 private:
     Ui::BrokerForm *ui;
+    QMqttClient *client;
 };
 
 #endif // ADDBROKER_H
