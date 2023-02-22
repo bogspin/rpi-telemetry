@@ -19,6 +19,9 @@ void BrokerForm::okClicked()
 {
     client->setHostname(getHostName());
     client->setPort(getPort());
+    client->setClientId(getClientID());
+    client->setUsername(getUserName());
+    client->setPassword(getPassword());
     client->connectToHost();
 }
 
@@ -53,6 +56,11 @@ void BrokerForm::emitOnStateChange()
         }
         default: break;
     }
+}
+
+QString BrokerForm::getClientID() const
+{
+    return ui->lineEditClientID->text();
 }
 
 QString BrokerForm::getHostName() const

@@ -21,8 +21,14 @@ MainWindow::MainWindow(QWidget *parent) :
     model = new QStringListModel(this);
     ui->listView->setModel(model);
 
-    connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createBrokerForm);
+    ui->comboQoS->addItem("0");
+    ui->comboQoS->addItem("1");
+    ui->comboQoS->addItem("2");
+    ui->comboQoS->setEditText("QoS");
 
+    connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createBrokerForm);
+    connect(ui->listView, &QAbstractItemView::clicked, this, &MainWindow::clientClicked);
+    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::subscribeToTopic);
 //    connect(m_client, &QMqttClient::disconnected, this, &MainWindow::brokerDisconnected);
 
 //    connect(m_client, &QMqttClient::messageReceived, this, &MainWindow::addMessageToDB);
@@ -78,6 +84,8 @@ void MainWindow::addClient(QMqttClient *newClient)
     //         this, &MainWindow::updateLogStateChange(newClient));
 
     mqttClients.append(newClient);
+    QList<QMqttSubscription*> emptySubList;
+    mqttSubs.append(emptySubList);
 
     if(model->insertRow(model->rowCount())) {
         QModelIndex index = model->index(model->rowCount() - 1, 0);
@@ -85,4 +93,26 @@ void MainWindow::addClient(QMqttClient *newClient)
     }
 
     qDebug() << newClient->hostname() << newClient->port();
+}
+
+void MainWindow::clientClicked(const QModelIndex &index)
+{
+    clientIndex = index.row();
+}
+
+void MainWindow::subscribeToTopic()
+{
+    auto subscription = mqttClients[clientIndex]->subscribe(ui->topicEdit->text(),
+                                                               ui->comboQoS->itemData(ui->comboQoS->currentIndex()).toUInt());
+    if (!subscription) {
+        QMessageBox::critical(this, QLatin1String("Error"), QLatin1String("Could not subscribe. Is there a valid connection?"));
+        return;
+    }
+    mqttSubs[clientIndex].append(subscription);
+    connect(subscription, &QMqttSubscription::messageReceived, this, &MainWindow::displayMessage);
+}
+
+void MainWindow::displayMessage(const QMqttMessage &msg)
+{
+    ui->listWidget->addItem(msg.payload());
 }

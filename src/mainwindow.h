@@ -35,14 +35,19 @@ private slots:
 
     void createBrokerForm();
     void addClient(QMqttClient *newClient);
+    void clientClicked(const QModelIndex &index);
+    void subscribeToTopic();
+    void displayMessage(const QMqttMessage &msg);
 
 private:
     Ui::MainWindow *ui;
     BrokerForm *brokerFormWindow;
-    QMqttClient *m_client;
 
     QList<QMqttClient*> mqttClients;
+    QList<QList<QMqttSubscription*>> mqttSubs;
     QStringListModel *model;
+
+    int clientIndex;
 };
 
 #endif // MAINWINDOW_H

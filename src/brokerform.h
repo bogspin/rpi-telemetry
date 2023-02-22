@@ -18,6 +18,7 @@ public:
     explicit BrokerForm(QWidget *parent = nullptr);
     QString getHostName() const;
     int getPort() const;
+    QString getClientID() const;
     QString getUserName() const;
     QString getPassword() const;
 
