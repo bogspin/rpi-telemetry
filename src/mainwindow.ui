@@ -41,18 +41,38 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <widget class="QListWidget" name="listWidget">
+      <widget class="QWidget" name="gridLayoutWidget">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>331</width>
-         <height>261</height>
+         <width>361</width>
+         <height>221</height>
         </rect>
        </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 255);</string>
-       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QLabel" name="topicLabel">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QListWidget" name="listWidget">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -146,10 +166,15 @@
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
+    <property name="styleSheet">
+     <string notr="true">color: rgb(255, 255, 255);</string>
+    </property>
     <property name="title">
      <string>File</string>
     </property>
     <addaction name="actionQuit"/>
+    <addaction name="separator"/>
+    <addaction name="actionConnectTS"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -157,6 +182,11 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionConnectTS">
+   <property name="text">
+    <string>Connect to Thingspeak</string>
    </property>
   </action>
  </widget>

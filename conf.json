@@ -1,0 +1,21 @@
+{
+  "connections": [
+    {
+      "hostname": "mqtt3.thingspeak.com",
+      "port": "1883",
+      "clientid": "OykJDzssDyMJHQUlDRkwMwY",
+      "username": "OykJDzssDyMJHQUlDRkwMwY",
+      "password": "cMtgWZIIDKNhck8N/cHUg5PC",
+      "subscriptions": [
+        {
+          "topic": "channels/182328/subscribe/fields/+",
+          "qos": "0"
+        }
+      ]
+    },
+    {
+      "hostname": "test.mosquitto.org",
+      "port": "1883"
+    }
+  ]
+}

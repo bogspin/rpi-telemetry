@@ -5,8 +5,6 @@
 #include <QtMqtt/QMqttClient>
 #include <QtWidgets/QMessageBox>
 
-#include "InfluxDBFactory.h"
-#include "Point.h"
 #include "QDebug"
 #include <string.h>
 
@@ -25,10 +23,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->comboQoS->addItem("1");
     ui->comboQoS->addItem("2");
     ui->comboQoS->setEditText("QoS");
+    ui->menuFile->setStyleSheet("QMenu::item{"
+                                "color: rgb(255, 255, 255);"
+                                "}");
 
+    connect(ui->actionQuit, &QAction::triggered, this, [] {
+        QApplication::quit();
+    });
+    connect(ui->actionConnectTS, &QAction::triggered, this, &MainWindow::connectToThingSpeak);
     connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::createBrokerForm);
-    connect(ui->listView, &QAbstractItemView::clicked, this, &MainWindow::clientClicked);
-    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::subscribeToTopic);
+    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::onSubscribe);
+    connect(ui->unsubscribeButton, &QPushButton::clicked, this, &MainWindow::onUnsubscribe);
 //    connect(m_client, &QMqttClient::disconnected, this, &MainWindow::brokerDisconnected);
 
 //    connect(m_client, &QMqttClient::messageReceived, this, &MainWindow::addMessageToDB);
@@ -65,7 +70,7 @@ void MainWindow::updateLogStateChange(QMqttClient *client)
 void MainWindow::createBrokerForm()
 {
     brokerFormWindow = new BrokerForm(this);
-    brokerFormWindow->setWindowTitle("Add MQTT Client");
+    brokerFormWindow->setWindowTitle("Add MQTT broker");
     brokerFormWindow->setWindowState(Qt::WindowActive);
     QScreen *screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
@@ -74,18 +79,18 @@ void MainWindow::createBrokerForm()
     brokerFormWindow->move(x, y);
     brokerFormWindow->show();
 
-    connect(brokerFormWindow, &BrokerForm::connected, this, &MainWindow::addClient);
+    connect(brokerFormWindow, &BrokerForm::connected, this, &MainWindow::addBroker);
     connect(brokerFormWindow, &BrokerForm::disconnected, this, []{});
 }
 
-void MainWindow::addClient(QMqttClient *newClient)
+void MainWindow::addBroker(QMqttClient *newClient)
 {
     // connect(newClient, &QMqttClient::stateChanged,
     //         this, &MainWindow::updateLogStateChange(newClient));
 
-    mqttClients.append(newClient);
-    QList<QMqttSubscription*> emptySubList;
-    mqttSubs.append(emptySubList);
+    QMqttData* newConn = new QMqttData();
+    newConn->assignClient(newClient);
+    mqttConnections.append(newConn);
 
     if(model->insertRow(model->rowCount())) {
         QModelIndex index = model->index(model->rowCount() - 1, 0);
@@ -95,24 +100,51 @@ void MainWindow::addClient(QMqttClient *newClient)
     qDebug() << newClient->hostname() << newClient->port();
 }
 
-void MainWindow::clientClicked(const QModelIndex &index)
+void MainWindow::onSubscribe()
 {
-    clientIndex = index.row();
-}
+    int clientIndex = ui->listView->currentIndex().row();
 
-void MainWindow::subscribeToTopic()
-{
-    auto subscription = mqttClients[clientIndex]->subscribe(ui->topicEdit->text(),
-                                                               ui->comboQoS->itemData(ui->comboQoS->currentIndex()).toUInt());
-    if (!subscription) {
-        QMessageBox::critical(this, QLatin1String("Error"), QLatin1String("Could not subscribe. Is there a valid connection?"));
+    if (clientIndex == -1) {
+        QMessageBox::critical(this, QLatin1String("Error"), QLatin1String("Please select a connection first!"));
         return;
     }
-    mqttSubs[clientIndex].append(subscription);
-    connect(subscription, &QMqttSubscription::messageReceived, this, &MainWindow::displayMessage);
+
+    auto subscription = mqttConnections[clientIndex]->subscribeToTopic(ui->topicEdit->text(),
+                                                                 ui->comboQoS->itemData(ui->comboQoS->currentIndex()).toUInt());
+    if (!subscription) {
+        QMessageBox::critical(this, QLatin1String("Error"), QLatin1String("Could not subscribe! Check topic spelling or connection status"));
+        return;
+    }
+
+    ui->topicLabel->setText(mqttConnections[clientIndex]->getTopics().join("\n"));
+    //connect(subscription, &QMqttSubscription::messageReceived, this, &MainWindow::displayMessage);
+}
+
+void MainWindow::onUnsubscribe()
+{
+    int clientIndex = ui->listView->currentIndex().row();
+
+    if (clientIndex == -1) {
+        QMessageBox::critical(this, QLatin1String("Error"), QLatin1String("Please select a connection first!"));
+        return;
+    }
+
+    qDebug() << mqttConnections[clientIndex]->getTopics();
 }
 
 void MainWindow::displayMessage(const QMqttMessage &msg)
 {
     ui->listWidget->addItem(msg.payload());
+}
+
+void MainWindow::connectToThingSpeak()
+{
+    QMqttClient *tsClient = new QMqttClient(this);
+    tsClient->setHostname("mqtt3.thingspeak.com");
+    tsClient->setPort(1883);
+    tsClient->setClientId("OykJDzssDyMJHQUlDRkwMwY");
+    tsClient->setUsername("OykJDzssDyMJHQUlDRkwMwY");
+    tsClient->setPassword("cMtgWZIIDKNhck8N/cHUg5PC");
+    tsClient->connectToHost();
+    addBroker(tsClient);
 }

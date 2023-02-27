@@ -24,8 +24,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #    endif()
 #endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Mqtt Network Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Mqtt Network Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Mqtt Network Widgets VirtualKeyboard REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Mqtt Network Widgets VirtualKeyboard REQUIRED)
 find_package(InfluxDB)
 
 set(PROJECT_SOURCES
@@ -33,6 +33,8 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        qmqttdata.cpp
+        qmqttdata.h
         brokerform.cpp
         brokerform.h
         brokerform.ui
@@ -60,5 +62,6 @@ target_link_libraries(src PRIVATE
     Qt${QT_VERSION_MAJOR}::Mqtt
     Qt${QT_VERSION_MAJOR}::Network
     Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::VirtualKeyboard
     InfluxData::InfluxDB
 )
