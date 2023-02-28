@@ -2,7 +2,7 @@
 
 QMqttData::QMqttData(QObject *parent) : QObject(parent)
 {
-    client = new QMqttClient();
+    client = new QMqttClient(this);
 
     connect(this->client, &QMqttClient::stateChanged, this, &QMqttData::updateClientStatus);
 }
@@ -36,7 +36,7 @@ void QMqttData::createClient(QString hostname, quint16 port, QString clientID,
 QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
 {
     QMqttSubscription* sub = client->subscribe(topic, qos);
-
+    qDebug() << client->state();
     if (sub) {
         topics.append(sub);
         connect(sub, &QMqttSubscription::stateChanged, this, &QMqttData::updateSubStatus);
@@ -76,6 +76,13 @@ void QMqttData::updateSubStatus(QMqttSubscription::SubscriptionState state)
         qDebug() << ("--Unknown--");
         break;
     }
+}
+
+void QMqttData::getClientInfo()
+{
+    qDebug() << client->hostname();
+    qDebug() << client->port();
+    qDebug() << client->state();
 }
 
 void QMqttData::printMsg(const QMqttMessage &msg)
