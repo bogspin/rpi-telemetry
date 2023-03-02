@@ -4,13 +4,25 @@ QMqttData::QMqttData(QObject *parent) : QObject(parent)
 {
     client = new QMqttClient(this);
 
-    connect(this->client, &QMqttClient::stateChanged, this, &QMqttData::updateClientStatus);
+    connect(client, &QMqttClient::stateChanged, this, &QMqttData::updateClientStatus);
+    connect(client, &QMqttClient::connected, this, &QMqttData::onConnect);
+    connect(client, &QMqttClient::disconnected, this, &QMqttData::onDisconnect);
 }
 
 QMqttData::~QMqttData()
 {
     client->disconnect();
     delete client;
+}
+
+void QMqttData::onConnect()
+{
+    emit clientConnected(this);
+}
+
+void QMqttData::onDisconnect()
+{
+    emit clientDisconnected(this);
 }
 
 void QMqttData::assignClient(QMqttClient* client, QList<QMqttSubscription*> subList)
@@ -22,7 +34,7 @@ void QMqttData::assignClient(QMqttClient* client, QList<QMqttSubscription*> subL
     testQuery();
 }
 
-void QMqttData::createClient(QString hostname, quint16 port, QString clientID,
+void QMqttData::setClient(QString hostname, quint16 port, QString clientID,
                              QString username, QString password)
 {
     this->client->setHostname(hostname);
@@ -30,22 +42,32 @@ void QMqttData::createClient(QString hostname, quint16 port, QString clientID,
     this->client->setClientId(clientID);
     this->client->setUsername(username);
     this->client->setPassword(password);
+
     this->client->connectToHost();
 }
 
 QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
 {
-    QMqttSubscription* sub = client->subscribe(topic, qos);
-    qDebug() << client->state();
-    if (sub) {
-        topics.append(sub);
-        connect(sub, &QMqttSubscription::stateChanged, this, &QMqttData::updateSubStatus);
-        connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::printMsg);
-        if (db != nullptr) {
-            connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::writeToDB);
+    try {
+        if (client->state() == QMqttClient::ClientState::Connected) {
+            QMqttSubscription* sub = client->subscribe(topic, qos);
+            if (sub) {
+                connect(sub, &QMqttSubscription::stateChanged, this, &QMqttData::updateSubStatus);
+                connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::printMsg);
+                topics.append(sub);
+//                if (db != nullptr) {
+//                    connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::writeToDB);
+//                }
+            }
+            return sub;
+        } else {
+            throw client->state();
         }
+    }  catch (QMqttClient::ClientState state) {
+        qDebug() << "Can't subscribe!" << state;
     }
-    return sub;
+
+    return nullptr;
 }
 
 void QMqttData::updateClientStatus(QMqttClient::ClientState state)
@@ -108,6 +130,11 @@ void QMqttData::unsubscribeAll()
         sub->unsubscribe();
     }
     topics.clear();
+}
+
+QMqttClient* QMqttData::getClient()
+{
+    return this->client;
 }
 
 QStringList QMqttData::getTopics()

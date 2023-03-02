@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QThread>
 #include "qmqttdata.h"
 
 class QMqttService : public QObject
@@ -18,6 +19,8 @@ public:
 
     bool setConfigFile(const QString &path);
     void startService();
+    QMqttData* addConnection(const QJsonObject &conn);
+    void addSubscriptions(QMqttData *conn, const QJsonArray &subs);
 
 private:
     QList<QMqttData*> mqttConnections;
@@ -25,7 +28,7 @@ private:
     QFileSystemWatcher configFile;
 
 signals:
-
+    void hasSubs(QMqttData* conn, const QJsonArray &subs);
 };
 
 #endif // QMQTTSERVICE_H

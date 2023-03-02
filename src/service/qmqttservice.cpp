@@ -24,9 +24,6 @@ void QMqttService::startService()
     QJsonParseError parseErr;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &parseErr);
     QJsonObject conf;
-    QString hostname, clientID, username, password, topic;
-    quint16 port;
-    quint8 qos;
 
     if (parseErr.error == QJsonParseError::NoError) {
         conf = jsonDoc.object();
@@ -40,55 +37,61 @@ void QMqttService::startService()
 
         foreach (QJsonValue i, connections) {
             QJsonObject conn = i.toObject();
-
-            if (conn.contains("hostname")) {
-                hostname = conn.value("hostname").toString();
-            }
-            if (conn.contains("port")) {
-                port = static_cast<quint16>(conn.value("port").toString().toInt());
-            }
-            if (conn.contains("clientid")) {
-                clientID = conn.value("clientid").toString();
-            }
-            else {
-                clientID = QString();
-            }
-            if (conn.contains("username")) {
-                username = conn.value("username").toString();
-            }
-            else {
-                username = QString();
-            }
-            if (conn.contains("password")) {
-                password = conn.value("password").toString();
-            }
-            else {
-                password = QString();
-            }
-
-            QMqttData* newConn = new QMqttData();
-            newConn->createClient(hostname, port, clientID, username, password);
-            mqttConnections.append(newConn);
-
-            // WAIT UNTIL CLIENT CONNECTED -> SEMAPHORE?
+            QMqttData *newConn = addConnection(conn);
 
             if (conn.contains("subscriptions")) {
                 QJsonArray subs = conn.value("subscriptions").toArray();
 
-                foreach (QJsonValue j, subs) {
-                    QJsonObject sub = j.toObject();
-
-                    if (sub.contains("topic")) {
-                        topic = sub.value("topic").toString();
-                    }
-                    if (sub.contains("qos")) {
-                        qos = static_cast<quint8>(sub.value("qos").toString().toInt());
-                    }
-
-                    mqttConnections.back()->subscribeToTopic(topic, qos);
-                }
-                qDebug() << mqttConnections.back()->getTopics();
+                connect(newConn, &QMqttData::clientConnected, this, [this, newConn, subs](){
+                    connect(this, &QMqttService::hasSubs, this, &QMqttService::addSubscriptions);
+                    emit hasSubs(newConn, subs);
+                });
             }
         }
+    }
+}
+
+QMqttData* QMqttService::addConnection(const QJsonObject &conn)
+{
+    QMqttData* newConn = new QMqttData();
+
+    if (conn.contains("hostname")) {
+        newConn->getClient()->setHostname(conn.value("hostname").toString());
+    }
+    if (conn.contains("port")) {
+        newConn->getClient()->setPort(conn.value("port").toString().toInt());
+    }
+    if (conn.contains("clientid")) {
+        newConn->getClient()->setClientId(conn.value("clientid").toString());
+    }
+    if (conn.contains("username")) {
+        newConn->getClient()->setUsername(conn.value("username").toString());
+    }
+    if (conn.contains("password")) {
+        newConn->getClient()->setPassword(conn.value("password").toString());
+    }
+
+    newConn->getClient()->connectToHost();
+    mqttConnections.append(newConn);
+
+    return newConn;
+}
+
+void QMqttService::addSubscriptions(QMqttData *conn, const QJsonArray &subs)
+{
+    QString topic;
+    quint8 qos = 0;
+
+    foreach (QJsonValue j, subs) {
+        QJsonObject sub = j.toObject();
+
+        if (sub.contains("topic")) {
+            topic = sub.value("topic").toString();
+        }
+        if (sub.contains("qos")) {
+            qos = static_cast<quint8>(sub.value("qos").toString().toInt());
+        }
+
+        conn->subscribeToTopic(topic, qos);
     }
 }
