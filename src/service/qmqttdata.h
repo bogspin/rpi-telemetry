@@ -15,9 +15,7 @@ public:
     explicit QMqttData(QObject *parent = nullptr);
     ~QMqttData();
 
-    void assignClient(QMqttClient* client,
-              QList<QMqttSubscription*> subList = QList<QMqttSubscription*>());
-    void setClient(QString hostname, quint16 port, QString clientID = QString(),
+    void setClientInfo(QString hostname, quint16 port, QString clientID = QString(),
                       QString username = QString(), QString password = QString());
     QMqttSubscription* subscribeToTopic(const QString &topic, quint8 qos);
     void unsubscribeFromTopic(const QString &topic);

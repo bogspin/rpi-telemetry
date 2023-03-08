@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>BrokerForm</class>
- <widget class="QWidget" name="BrokerForm">
+ <class>ConnectionForm</class>
+ <widget class="QWidget" name="ConnectionForm">
   <property name="geometry">
    <rect>
     <x>0</x>

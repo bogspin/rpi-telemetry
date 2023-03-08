@@ -3,19 +3,19 @@
 
 #include <QWidget>
 #include <QMessageBox>
-#include <QtMqtt>
+#include <QJsonObject>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
-class BrokerForm;
+class ConnectionForm;
 }
 QT_END_NAMESPACE
 
-class BrokerForm : public QWidget
+class ConnectionForm : public QWidget
 {
     Q_OBJECT
 public:
-    explicit BrokerForm(QWidget *parent = nullptr);
+    explicit ConnectionForm(QWidget *parent = nullptr);
     QString getHostName() const;
     int getPort() const;
     QString getClientID() const;
@@ -23,17 +23,15 @@ public:
     QString getPassword() const;
 
 signals:
-    void connected(QMqttClient* client);
-    void disconnected();
+    void connection(QJsonObject connInfo);
 
 private slots:
     void okClicked();
     void cancelClicked();
-    void emitOnStateChange();
 
 private:
-    Ui::BrokerForm *ui;
-    QMqttClient *client;
+    Ui::ConnectionForm *ui;
+    QJsonObject connInfo;
 };
 
 #endif // ADDBROKER_H

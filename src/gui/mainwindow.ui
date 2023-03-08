@@ -46,29 +46,15 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>361</width>
-         <height>221</height>
+         <width>601</width>
+         <height>411</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout">
         <item row="0" column="0">
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <widget class="QLabel" name="topicLabel">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QListWidget" name="listWidget">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);</string>
-            </property>
-           </widget>
+           <widget class="QCustomPlot" name="customPlot" native="true"/>
           </item>
          </layout>
         </item>
@@ -89,7 +75,12 @@
        </widget>
       </item>
       <item>
-       <widget class="QListView" name="listView">
+       <widget class="QPlainTextEdit" name="configEdit">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
         <property name="styleSheet">
          <string notr="true">color: rgb(255, 255, 255);</string>
         </property>
@@ -165,6 +156,9 @@
      <height>27</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 255, 255);</string>
+   </property>
    <widget class="QMenu" name="menuFile">
     <property name="styleSheet">
      <string notr="true">color: rgb(255, 255, 255);</string>
@@ -191,6 +185,14 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

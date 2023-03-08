@@ -7,6 +7,7 @@ QMqttData::QMqttData(QObject *parent) : QObject(parent)
     connect(client, &QMqttClient::stateChanged, this, &QMqttData::updateClientStatus);
     connect(client, &QMqttClient::connected, this, &QMqttData::onConnect);
     connect(client, &QMqttClient::disconnected, this, &QMqttData::onDisconnect);
+    connect(client, &QMqttClient::connected, this, &QMqttData::connectToDB);
 }
 
 QMqttData::~QMqttData()
@@ -25,25 +26,20 @@ void QMqttData::onDisconnect()
     emit clientDisconnected(this);
 }
 
-void QMqttData::assignClient(QMqttClient* client, QList<QMqttSubscription*> subList)
-{
-    this->client = client;
-    this->topics = subList;
-
-    connectToDB();
-    testQuery();
-}
-
-void QMqttData::setClient(QString hostname, quint16 port, QString clientID,
+void QMqttData::setClientInfo(QString hostname, quint16 port, QString clientID,
                              QString username, QString password)
 {
     this->client->setHostname(hostname);
     this->client->setPort(port);
-    this->client->setClientId(clientID);
-    this->client->setUsername(username);
-    this->client->setPassword(password);
-
-    this->client->connectToHost();
+    if (clientID != QString()) {
+        this->client->setClientId(clientID);
+    }
+    if (username != QString()) {
+        this->client->setUsername(username);
+    }
+    if (password != QString()) {
+        this->client->setPassword(password);
+    }
 }
 
 QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
@@ -54,10 +50,8 @@ QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
             if (sub) {
                 connect(sub, &QMqttSubscription::stateChanged, this, &QMqttData::updateSubStatus);
                 connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::printMsg);
+                connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::writeToDB);
                 topics.append(sub);
-//                if (db != nullptr) {
-//                    connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::writeToDB);
-//                }
             }
             return sub;
         } else {
@@ -150,16 +144,18 @@ void QMqttData::connectToDB()
 {
     QStringList dbName = client->hostname().split(".");
     QString url = "http://localhost:8086?db=" + dbName[1];
-    qDebug() << url;
+
     db = influxdb::InfluxDBFactory::Get(url.toStdString());
     db->createDatabaseIfNotExists();
 }
 
 void QMqttData::writeToDB(const QMqttMessage &msg)
 {
-    QString payload(msg.payload());
-
-    db->write(influxdb::Point{msg.topic().name().toStdString()}.addField("value", payload.toFloat()));
+    if (db == nullptr) {
+        return;
+    }
+    db->write(influxdb::Point{msg.topic().name().toStdString()}.
+              addField("value", msg.payload().toFloat()));
 }
 
 void QMqttData::testQuery()
