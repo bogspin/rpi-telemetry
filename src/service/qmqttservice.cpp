@@ -32,6 +32,8 @@ void QMqttService::startService()
         return;
     }
 
+    connectToDB();
+
     if (conf.contains("connections")) {
         QJsonArray connections = conf.value("connections").toArray();
 
@@ -74,6 +76,8 @@ QMqttData* QMqttService::addConnection(const QJsonObject &conn)
     newConn->getClient()->connectToHost();
     mqttConnections.append(newConn);
 
+    connect(newConn, &QMqttData::messageReceived, this, &QMqttService::writeToDB);
+
     return newConn;
 }
 
@@ -95,3 +99,23 @@ void QMqttService::addSubscriptions(QMqttData *conn, const QJsonArray &subs)
         conn->subscribeToTopic(topic, qos);
     }
 }
+
+void QMqttService::connectToDB()
+{
+    QString url = "http://localhost:8086?db=rpi_telemetry";
+
+    db = influxdb::InfluxDBFactory::Get(url.toStdString());
+    db->createDatabaseIfNotExists();
+}
+
+void QMqttService::writeToDB(const QString &hostname, const QMqttMessage &msg)
+{
+    if (db == nullptr) {
+        return;
+    }
+    db->write(influxdb::Point{hostname.toStdString()}.
+              addTag("topic", msg.topic().name().toStdString()).
+              addField("value", msg.payload().toFloat()));
+    qDebug() << msg.payload();
+}
+

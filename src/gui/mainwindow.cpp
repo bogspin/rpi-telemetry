@@ -9,12 +9,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow::showFullScreen();
     this->setStyleSheet("background-color: #333333;");
 
-    model = new QStringListModel(this);
-
     ui->comboQoS->addItem("0");
     ui->comboQoS->addItem("1");
     ui->comboQoS->addItem("2");
-    ui->comboQoS->setEditText("QoS");
+    ui->comboQoS->setCurrentIndex(0);
     ui->menuFile->setStyleSheet("QMenu::item{"
                                 "color: rgb(255, 255, 255);"
                                 "}");
@@ -23,10 +21,19 @@ MainWindow::MainWindow(QWidget *parent) :
         QApplication::quit();
     });
     connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::openConnForm);
-    connect(this, &MainWindow::configChanged, this, &MainWindow::displayConfigJson);
+
+    connect(this, &MainWindow::configChanged, this, &MainWindow::saveConfig);
+    connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this](QString path) {
+        loadTree();
+    });
 
     makePlot();
-    loadConfigJson("../../conf.json");
+    setConfigPath("../../conf.json");
+    loadConfigJson();
+    loadTree();
+
+    connectToDB();
+    //getValues("mqtt3.thingspeak.com", "channels/1992747/subscribe/fields/field1");
 }
 
 MainWindow::~MainWindow()
@@ -50,9 +57,47 @@ void MainWindow::openConnForm()
     connect(connForm, &ConnectionForm::connection, this, &MainWindow::addConnection);
 }
 
-QJsonParseError MainWindow::loadConfigJson(const QString &path)
+void MainWindow::loadTree()
 {
-    QFile inFile(path);
+    QJsonTree *model = new QJsonTree();
+
+    model->loadJson(configObj.value("connections").toArray());
+    ui->configTree->setModel(model);
+    ui->configTree->expandAll();
+}
+
+void MainWindow::saveConfig()
+{
+    QFile outFile(getConfigPath());
+    QJsonDocument jsonDoc(configObj);
+
+    outFile.open(QIODevice::WriteOnly|QIODevice::Text);
+    outFile.write(jsonDoc.toJson());
+}
+
+QString MainWindow::getConfigPath()
+{
+    try {
+        if (configMonitor.files().size() == 1) {
+            return configMonitor.files().at(0);
+        } else {
+            throw configMonitor.files().size();
+        }
+    }  catch (int size) {
+        qDebug() << "Multiple config files loaded!" << size;
+        return QString();
+    }
+}
+
+void MainWindow::setConfigPath(const QString &path)
+{
+    configMonitor.removePaths(configMonitor.files());
+    configMonitor.addPath(path);
+}
+
+QJsonParseError MainWindow::loadConfigJson()
+{
+    QFile inFile(getConfigPath());
     inFile.open(QIODevice::ReadOnly|QIODevice::Text);
     QByteArray data = inFile.readAll();
     QJsonParseError errorPtr;
@@ -64,14 +109,6 @@ QJsonParseError MainWindow::loadConfigJson(const QString &path)
     }
 
     return errorPtr;
-}
-
-void MainWindow::displayConfigJson()
-{
-    QJsonDocument doc(configObj);
-    QString configString = doc.toJson(QJsonDocument::Indented);
-
-    ui->configEdit->setPlainText(configString);
 }
 
 void MainWindow::addConnection(QJsonObject connInfo)
@@ -88,6 +125,28 @@ void MainWindow::addConnection(QJsonObject connInfo)
 
     emit configChanged();
 }
+
+void MainWindow::connectToDB()
+{
+    QString url = "http://localhost:8086?db=rpi_telemetry";
+
+    db = influxdb::InfluxDBFactory::Get(url.toStdString());
+    db->createDatabaseIfNotExists();
+}
+
+void MainWindow::getValues(QString hostname, QString topic)
+{
+    QString query = "select * from '" + hostname + "' where topic='" + topic + "'";
+
+    for (auto i: db->query(query.toStdString())) {
+         qDebug()<<i.getName().c_str()<<":";
+         qDebug()<<i.getTags().c_str()<<":";
+         qDebug()<<i.getFields().c_str()<<":";
+         QString timestamp(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(i.getTimestamp().time_since_epoch()).count()).c_str());
+         qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());
+        }
+}
+
 
 void MainWindow::makePlot()
 {

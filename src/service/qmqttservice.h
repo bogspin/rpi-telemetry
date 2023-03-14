@@ -21,6 +21,8 @@ public:
     void startService();
     QMqttData* addConnection(const QJsonObject &conn);
     void addSubscriptions(QMqttData *conn, const QJsonArray &subs);
+    void connectToDB();
+    void writeToDB(const QString &hostname, const QMqttMessage &msg);
 
 private:
     QList<QMqttData*> mqttConnections;

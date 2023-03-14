@@ -14,6 +14,7 @@
 #include "InfluxDBFactory.h"
 #include "Point.h"
 #include "qcustomplot.h"
+#include "qjsontree.h"
 #include "connectionform.h"
 
 QT_BEGIN_NAMESPACE
@@ -31,17 +32,22 @@ public:
     ~MainWindow();
 
     void makePlot();
-    QJsonParseError loadConfigJson(const QString &path);
-    void displayConfigJson();
+    QString getConfigPath();
+    void setConfigPath(const QString &path);
+    QJsonParseError loadConfigJson();
     void addConnection(QJsonObject connInfo);
+    void connectToDB();
+    void getValues(QString hostname, QString topic);
 
 private slots:
     void openConnForm();
+    void loadTree();
+    void saveConfig();
 
 private:
     Ui::MainWindow *ui;
 
-    QStringListModel *model;
+    QFileSystemWatcher configMonitor;
     QJsonObject configObj;
     std::unique_ptr<influxdb::InfluxDB> db;
 

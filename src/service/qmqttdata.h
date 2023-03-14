@@ -15,33 +15,29 @@ public:
     explicit QMqttData(QObject *parent = nullptr);
     ~QMqttData();
 
+    void getClientInfo();
     void setClientInfo(QString hostname, quint16 port, QString clientID = QString(),
                       QString username = QString(), QString password = QString());
     QMqttSubscription* subscribeToTopic(const QString &topic, quint8 qos);
     void unsubscribeFromTopic(const QString &topic);
     void unsubscribeAll();
     QStringList getTopics();
-    void printMsg(const QMqttMessage &msg);
     void updateClientStatus(QMqttClient::ClientState state);
     void updateSubStatus(QMqttSubscription::SubscriptionState state);
-    void getClientInfo();
     QMqttClient* getClient();
-
-    void connectToDB();
-    void writeToDB(const QMqttMessage &msg);
-    void testQuery();
 
     void onConnect();
     void onDisconnect();
+    void sendMessage(QMqttMessage msg);
 
 private:
     QMqttClient *client;
     QList<QMqttSubscription*> topics;
-    std::unique_ptr<influxdb::InfluxDB> db;
 
 signals:
     void clientConnected(QMqttData*);
     void clientDisconnected(QMqttData*);
+    void messageReceived(QString hostname, QMqttMessage msg);
 };
 
 #endif // QMQTTDATA_H

@@ -7,7 +7,6 @@ QMqttData::QMqttData(QObject *parent) : QObject(parent)
     connect(client, &QMqttClient::stateChanged, this, &QMqttData::updateClientStatus);
     connect(client, &QMqttClient::connected, this, &QMqttData::onConnect);
     connect(client, &QMqttClient::disconnected, this, &QMqttData::onDisconnect);
-    connect(client, &QMqttClient::connected, this, &QMqttData::connectToDB);
 }
 
 QMqttData::~QMqttData()
@@ -24,6 +23,11 @@ void QMqttData::onConnect()
 void QMqttData::onDisconnect()
 {
     emit clientDisconnected(this);
+}
+
+void QMqttData::sendMessage(QMqttMessage msg)
+{
+    emit messageReceived(this->client->hostname(), msg);
 }
 
 void QMqttData::setClientInfo(QString hostname, quint16 port, QString clientID,
@@ -49,8 +53,7 @@ QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
             QMqttSubscription* sub = client->subscribe(topic, qos);
             if (sub) {
                 connect(sub, &QMqttSubscription::stateChanged, this, &QMqttData::updateSubStatus);
-                connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::printMsg);
-                connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::writeToDB);
+                connect(sub, &QMqttSubscription::messageReceived, this, &QMqttData::sendMessage);
                 topics.append(sub);
             }
             return sub;
@@ -101,11 +104,6 @@ void QMqttData::getClientInfo()
     qDebug() << client->state();
 }
 
-void QMqttData::printMsg(const QMqttMessage &msg)
-{
-    qDebug() << msg.topic().name() << ": " << msg.payload();
-}
-
 void QMqttData::unsubscribeFromTopic(const QString &topic)
 {
     QList<QMqttSubscription*>::iterator it;
@@ -138,33 +136,4 @@ QStringList QMqttData::getTopics()
         topicList.append(sub->topic().filter());
     }
     return topicList;
-}
-
-void QMqttData::connectToDB()
-{
-    QStringList dbName = client->hostname().split(".");
-    QString url = "http://localhost:8086?db=" + dbName[1];
-
-    db = influxdb::InfluxDBFactory::Get(url.toStdString());
-    db->createDatabaseIfNotExists();
-}
-
-void QMqttData::writeToDB(const QMqttMessage &msg)
-{
-    if (db == nullptr) {
-        return;
-    }
-    db->write(influxdb::Point{msg.topic().name().toStdString()}.
-              addField("value", msg.payload().toFloat()));
-}
-
-void QMqttData::testQuery()
-{
-    for (auto i: db->query("select * from \"channels/182328/subscribe/fields/field3\"")) {
-     qDebug()<<i.getName().c_str()<<":";
-     qDebug()<<i.getTags().c_str()<<":";
-     qDebug()<<i.getFields().c_str()<<":";
-     QString timestamp(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(i.getTimestamp().time_since_epoch()).count()).c_str());
-     qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());
-    }
 }
