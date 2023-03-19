@@ -61,7 +61,7 @@ QMqttData* QMqttService::addConnection(const QJsonObject &conn)
         newConn->getClient()->setHostname(conn.value("hostname").toString());
     }
     if (conn.contains("port")) {
-        newConn->getClient()->setPort(conn.value("port").toString().toInt());
+        newConn->getClient()->setPort(conn.value("port").toInt());
     }
     if (conn.contains("clientid")) {
         newConn->getClient()->setClientId(conn.value("clientid").toString());
@@ -93,7 +93,7 @@ void QMqttService::addSubscriptions(QMqttData *conn, const QJsonArray &subs)
             topic = sub.value("topic").toString();
         }
         if (sub.contains("qos")) {
-            qos = static_cast<quint8>(sub.value("qos").toString().toInt());
+            qos = static_cast<quint8>(sub.value("qos").toInt());
         }
 
         conn->subscribeToTopic(topic, qos);

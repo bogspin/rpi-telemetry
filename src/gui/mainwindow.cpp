@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
         QApplication::quit();
     });
     connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::openConnForm);
+    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
 
     connect(this, &MainWindow::configChanged, this, &MainWindow::saveConfig);
     connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this](QString path) {
@@ -55,6 +56,27 @@ void MainWindow::openConnForm()
     connForm->show();
 
     connect(connForm, &ConnectionForm::connection, this, &MainWindow::addConnection);
+}
+
+void MainWindow::openSubWindow()
+{
+    int index = getConnIndex();
+    if (index == -1) {
+        QMessageBox::warning(this, "No selections", "Select a connection from the list before trying to subscribe to a topic!");
+        return;
+    }
+
+    auto subWindow = new SubscriptionWindow();
+    subWindow->setWindowTitle("Subscribe to topic");
+    subWindow->setWindowState(Qt::WindowActive);
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect screenGeometry = screen->geometry();
+    int x = (screenGeometry.width() - subWindow->width()) / 2;
+    int y = (screenGeometry.height() - subWindow->height()) / 2;
+    subWindow->move(x, y);
+    subWindow->show();
+
+    connect(subWindow, &SubscriptionWindow::subscription, this, &MainWindow::addSubscription);
 }
 
 void MainWindow::loadTree()
@@ -126,6 +148,48 @@ void MainWindow::addConnection(QJsonObject connInfo)
     emit configChanged();
 }
 
+void MainWindow::addSubscription(QJsonObject subInfo)
+{
+    QJsonArray connections, subs;
+    QJsonObject conn;
+    int index = getConnIndex();
+
+    if (configObj.contains("connections")) {
+        connections = configObj.value("connections").toArray();
+    } else {
+        return;
+    }
+
+    conn = connections.at(index).toObject();
+    if (conn.contains("subscriptions")) {
+        subs = conn.value("subscriptions").toArray();
+        conn.remove("subscriptions");
+    }
+    subs.append(subInfo);
+    conn.insert("subscriptions", subs);
+    connections.replace(index, conn);
+    configObj.remove("connections");
+    configObj.insert("connections", connections);
+
+    emit configChanged();
+}
+
+int MainWindow::getConnIndex()
+{
+    auto item = ui->configTree->currentIndex();
+    int index;
+
+    if (!item.isValid()) {
+        return -1;
+    }
+    if (item.parent().isValid()) {
+        index = item.parent().row();
+    } else {
+        index = item.row();
+    }
+    return index;
+}
+
 void MainWindow::connectToDB()
 {
     QString url = "http://localhost:8086?db=rpi_telemetry";
@@ -136,7 +200,8 @@ void MainWindow::connectToDB()
 
 void MainWindow::getValues(QString hostname, QString topic)
 {
-    QString query = "select * from '" + hostname + "' where topic='" + topic + "'";
+    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'";
+    qDebug() << query;
 
     for (auto i: db->query(query.toStdString())) {
          qDebug()<<i.getName().c_str()<<":";

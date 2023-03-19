@@ -16,6 +16,7 @@
 #include "qcustomplot.h"
 #include "qjsontree.h"
 #include "connectionform.h"
+#include "subscriptionwindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -36,11 +37,14 @@ public:
     void setConfigPath(const QString &path);
     QJsonParseError loadConfigJson();
     void addConnection(QJsonObject connInfo);
+    void addSubscription(QJsonObject subInfo);
+    int getConnIndex();
     void connectToDB();
     void getValues(QString hostname, QString topic);
 
 private slots:
     void openConnForm();
+    void openSubWindow();
     void loadTree();
     void saveConfig();
 

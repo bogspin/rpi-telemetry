@@ -27,6 +27,9 @@ set(PROJECT_SOURCES
         connectionform.cpp
         connectionform.h
         connectionform.ui
+        subscriptionwindow.cpp
+        subscriptionwindow.h
+        subscriptionwindow.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

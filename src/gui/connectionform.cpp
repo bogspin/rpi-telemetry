@@ -23,6 +23,7 @@ void ConnectionForm::okClicked()
     }
 
     connInfo.insert("port", getPort());
+
     if (!getClientID().isEmpty()) {
         connInfo.insert("clientid", getClientID());
     }

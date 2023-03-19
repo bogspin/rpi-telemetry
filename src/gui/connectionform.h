@@ -1,5 +1,5 @@
-#ifndef BROKERFORM_H
-#define BROKERFORM_H
+#ifndef CONNECTIONWINDOW_H
+#define CONNECTIONWINDOW_H
 
 #include <QWidget>
 #include <QMessageBox>
