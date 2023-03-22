@@ -17,6 +17,8 @@
 #include "qjsontree.h"
 #include "connectionform.h"
 #include "subscriptionwindow.h"
+#include "graphdata.h"
+#include "utils.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,15 +34,19 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void makePlot();
     QString getConfigPath();
     void setConfigPath(const QString &path);
     QJsonParseError loadConfigJson();
     void addConnection(QJsonObject connInfo);
     void addSubscription(QJsonObject subInfo);
     int getConnIndex();
+
     void connectToDB();
-    void getValues(QString hostname, QString topic);
+    void plotMeasurement();
+    void getMeasurement(QString hostname, QString topic = QString());
+
+    void setPlotStyle();
+    void makePlot();
 
 private slots:
     void openConnForm();
@@ -50,9 +56,12 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QList<GraphData> graphData;
 
     QFileSystemWatcher configMonitor;
     QJsonObject configObj;
+    QJsonTree configModel;
+
     std::unique_ptr<influxdb::InfluxDB> db;
 
 signals:

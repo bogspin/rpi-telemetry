@@ -8,11 +8,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     QMainWindow::showFullScreen();
     this->setStyleSheet("background-color: #333333;");
+    setPlotStyle();
 
-    ui->comboQoS->addItem("0");
-    ui->comboQoS->addItem("1");
-    ui->comboQoS->addItem("2");
-    ui->comboQoS->setCurrentIndex(0);
     ui->menuFile->setStyleSheet("QMenu::item{"
                                 "color: rgb(255, 255, 255);"
                                 "}");
@@ -20,15 +17,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionQuit, &QAction::triggered, this, [] {
         QApplication::quit();
     });
-    connect(ui->addBroker, &QPushButton::clicked, this, &MainWindow::openConnForm);
+    connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnForm);
     connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
+    connect(ui->plotButton, &QPushButton::clicked, this, &MainWindow::plotMeasurement);
 
     connect(this, &MainWindow::configChanged, this, &MainWindow::saveConfig);
     connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this](QString path) {
         loadTree();
     });
 
-    makePlot();
     setConfigPath("../../conf.json");
     loadConfigJson();
     loadTree();
@@ -81,10 +78,8 @@ void MainWindow::openSubWindow()
 
 void MainWindow::loadTree()
 {
-    QJsonTree *model = new QJsonTree();
-
-    model->loadJson(configObj.value("connections").toArray());
-    ui->configTree->setModel(model);
+    configModel.loadJson(configObj.value("connections").toArray());
+    ui->configTree->setModel(&configModel);
     ui->configTree->expandAll();
 }
 
@@ -198,82 +193,44 @@ void MainWindow::connectToDB()
     db->createDatabaseIfNotExists();
 }
 
-void MainWindow::getValues(QString hostname, QString topic)
+void MainWindow::plotMeasurement()
 {
-    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'";
-    qDebug() << query;
+    QString hostname, topic;
+    auto item = ui->configTree->currentIndex();
 
-    for (auto i: db->query(query.toStdString())) {
-         qDebug()<<i.getName().c_str()<<":";
-         qDebug()<<i.getTags().c_str()<<":";
-         qDebug()<<i.getFields().c_str()<<":";
-         QString timestamp(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(i.getTimestamp().time_since_epoch()).count()).c_str());
-         qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());
-        }
+    if (!item.isValid()) {
+        QMessageBox::warning(this, "No selections", "First click on a topic to plot its logged data!");
+        return;
+    }
+
+    if (item.parent().isValid()) {
+        hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
+        topic = configModel.data(item, Qt::DisplayRole).toString();
+        getMeasurement(hostname, topic);
+    }
+    else {
+        hostname = configModel.data(item, Qt::DisplayRole).toString();
+    }
 }
 
-
-void MainWindow::makePlot()
+void MainWindow::getMeasurement(QString hostname, QString topic)
 {
-    // prepare data:
-    QVector<double> x1(20), y1(20);
-    QVector<double> x2(100), y2(100);
-    QVector<double> x3(20), y3(20);
-    QVector<double> x4(20), y4(20);
-    for (int i=0; i<x1.size(); ++i)
-    {
-      x1[i] = i/(double)(x1.size()-1)*10;
-      y1[i] = qCos(x1[i]*0.8+qSin(x1[i]*0.16+1.0))*qSin(x1[i]*0.54)+1.4;
-    }
-    for (int i=0; i<x2.size(); ++i)
-    {
-      x2[i] = i/(double)(x2.size()-1)*10;
-      y2[i] = qCos(x2[i]*0.85+qSin(x2[i]*0.165+1.1))*qSin(x2[i]*0.50)+1.7;
-    }
-    for (int i=0; i<x3.size(); ++i)
-    {
-      x3[i] = i/(double)(x3.size()-1)*10;
-      y3[i] = 0.05+3*(0.5+qCos(x3[i]*x3[i]*0.2+2)*0.5)/(double)(x3[i]+0.7)+qrand()/(double)RAND_MAX*0.01;
-    }
-    for (int i=0; i<x4.size(); ++i)
-    {
-      x4[i] = x3[i];
-      y4[i] = (0.5-y3[i])+((x4[i]-2)*(x4[i]-2)*0.02);
+    graphData.append(GraphData());
+    graphData.last().setHostname(hostname);
+    graphData.last().setTopic(topic);
+
+    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'";
+
+    for (auto i: db->query(query.toStdString())) {
+        //qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());*/
+        graphData.last().addPoint(valueToDouble(i.getFields()), timestampToDouble(i.getTimestamp()));
     }
 
-    // create and configure plottables:
-    QCPGraph *graph1 = ui->customPlot->addGraph();
-    graph1->setData(x1, y1);
-    graph1->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1.5), QBrush(Qt::white), 9));
-    graph1->setPen(QPen(QColor(120, 120, 120), 2));
+    makePlot();
+}
 
-    QCPGraph *graph2 = ui->customPlot->addGraph();
-    graph2->setData(x2, y2);
-    graph2->setPen(Qt::NoPen);
-    graph2->setBrush(QColor(200, 200, 200, 20));
-    graph2->setChannelFillGraph(graph1);
-
-    QCPBars *bars1 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
-    bars1->setWidth(9/(double)x3.size());
-    bars1->setData(x3, y3);
-    bars1->setPen(Qt::NoPen);
-    bars1->setBrush(QColor(10, 140, 70, 160));
-
-    QCPBars *bars2 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
-    bars2->setWidth(9/(double)x4.size());
-    bars2->setData(x4, y4);
-    bars2->setPen(Qt::NoPen);
-    bars2->setBrush(QColor(10, 100, 50, 70));
-    bars2->moveAbove(bars1);
-
-    // move bars above graphs and grid below bars:
-    ui->customPlot->addLayer("abovemain", ui->customPlot->layer("main"), QCustomPlot::limAbove);
-    ui->customPlot->addLayer("belowmain", ui->customPlot->layer("main"), QCustomPlot::limBelow);
-    graph1->setLayer("abovemain");
-    ui->customPlot->xAxis->grid()->setLayer("belowmain");
-    ui->customPlot->yAxis->grid()->setLayer("belowmain");
-
-    // set some pens, brushes and backgrounds:
+void MainWindow::setPlotStyle()
+{
     ui->customPlot->xAxis->setBasePen(QPen(Qt::white, 1));
     ui->customPlot->yAxis->setBasePen(QPen(Qt::white, 1));
     ui->customPlot->xAxis->setTickPen(QPen(Qt::white, 1));
@@ -304,7 +261,42 @@ void MainWindow::makePlot()
     axisRectGradient.setColorAt(0, QColor(80, 80, 80));
     axisRectGradient.setColorAt(1, QColor(30, 30, 30));
     ui->customPlot->axisRect()->setBackground(axisRectGradient);
+}
 
+void MainWindow::makePlot()
+{
+    // create and configure plottables:
+    QCPGraph *graph = ui->customPlot->addGraph();
+
+    graph->setData(graphData.last().getTimestamp(), graphData.last().getValue(), true);
+    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1.5), QBrush(Qt::white), 15));
+    graph->setPen(QPen(QColor(180, 180, 180), 4));
+    ui->customPlot->replot();
     ui->customPlot->rescaleAxes();
-    ui->customPlot->yAxis->setRange(0, 2);
+
+    /*QCPGraph *graph2 = ui->customPlot->addGraph();
+    graph2->setData(x2, y2);
+    graph2->setPen(Qt::NoPen);
+    graph2->setBrush(QColor(200, 200, 200, 20));
+    graph2->setChannelFillGraph(graph1);
+
+    QCPBars *bars1 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
+    bars1->setWidth(9/(double)x3.size());
+    bars1->setData(x3, y3);
+    bars1->setPen(Qt::NoPen);
+    bars1->setBrush(QColor(10, 140, 70, 160));
+
+    QCPBars *bars2 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
+    bars2->setWidth(9/(double)x4.size());
+    bars2->setData(x4, y4);
+    bars2->setPen(Qt::NoPen);
+    bars2->setBrush(QColor(10, 100, 50, 70));
+    bars2->moveAbove(bars1);
+
+    // move bars above graphs and grid below bars:
+    ui->customPlot->addLayer("abovemain", ui->customPlot->layer("main"), QCustomPlot::limAbove);
+    ui->customPlot->addLayer("belowmain", ui->customPlot->layer("main"), QCustomPlot::limBelow);
+    graph1->setLayer("abovemain");
+    ui->customPlot->xAxis->grid()->setLayer("belowmain");
+    ui->customPlot->yAxis->grid()->setLayer("belowmain");*/
 }
