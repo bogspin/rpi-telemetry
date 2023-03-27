@@ -18,6 +18,15 @@ SubscriptionWindow::SubscriptionWindow(QWidget *parent) :
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &SubscriptionWindow::cancelClicked);
 }
 
+void SubscriptionWindow::setSubscription(QJsonObject sub)
+{
+    ui->lineEditTopic->setText(sub.value("topic").toString());
+    ui->lineEditAlias->setText(sub.value("alias").toString());
+    ui->lineEditType->setText(sub.value("type").toString());
+    ui->lineEditUnit->setText(sub.value("unit").toString());
+    ui->comboBoxQoS->setCurrentIndex(sub.value("qos").toInt());
+}
+
 void SubscriptionWindow::okClicked()
 {
     if (!getTopic().isEmpty()) {

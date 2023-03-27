@@ -7,15 +7,16 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
-class ConnectionForm;
+class ConnectionWindow;
 }
 QT_END_NAMESPACE
 
-class ConnectionForm : public QWidget
+class ConnectionWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ConnectionForm(QWidget *parent = nullptr);
+    explicit ConnectionWindow(QWidget *parent = nullptr);
+    void setConnection(QJsonObject conn);
     QString getHostName() const;
     int getPort() const;
     QString getClientID() const;
@@ -30,7 +31,7 @@ private slots:
     void cancelClicked();
 
 private:
-    Ui::ConnectionForm *ui;
+    Ui::ConnectionWindow *ui;
     QJsonObject connInfo;
 };
 

@@ -16,6 +16,7 @@ class SubscriptionWindow : public QWidget
     Q_OBJECT
 public:
     explicit SubscriptionWindow(QWidget *parent = nullptr);
+    void setSubscription(QJsonObject sub);
     QString getTopic() const;
     int getQoS() const;
     QString getAlias() const;

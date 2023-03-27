@@ -40,9 +40,10 @@ MainWindow::~MainWindow()
     qApp->quit();
 }
 
-void MainWindow::openConnForm()
+ConnectionWindow* MainWindow::openConnForm()
 {
-    auto connForm = new ConnectionForm();
+    auto connForm = new ConnectionWindow();
+
     connForm->setWindowTitle("Add MQTT connection");
     connForm->setWindowState(Qt::WindowActive);
     QScreen *screen = QGuiApplication::primaryScreen();
@@ -52,15 +53,17 @@ void MainWindow::openConnForm()
     connForm->move(x, y);
     connForm->show();
 
-    connect(connForm, &ConnectionForm::connection, this, &MainWindow::addConnection);
+    connect(connForm, &ConnectionWindow::connection, this, &MainWindow::addConnection);
+
+    return connForm;
 }
 
-void MainWindow::openSubWindow()
+SubscriptionWindow* MainWindow::openSubWindow()
 {
     int index = getConnIndex();
     if (index == -1) {
         QMessageBox::warning(this, "No selections", "Select a connection from the list before trying to subscribe to a topic!");
-        return;
+        return nullptr;
     }
 
     auto subWindow = new SubscriptionWindow();
@@ -74,11 +77,34 @@ void MainWindow::openSubWindow()
     subWindow->show();
 
     connect(subWindow, &SubscriptionWindow::subscription, this, &MainWindow::addSubscription);
+
+    return subWindow;
 }
 
 void MainWindow::openConfigWindow(const QModelIndex &index)
 {
+    if (isSubscription(index)) {
+        QModelIndex parent = index.parent();
+        QJsonObject conn = configObj.value("connections").toArray().at(parent.row()).toObject();
+        QJsonObject sub;
 
+        if (conn.contains("subscriptions")) {
+            QJsonArray subs = conn.value("subscriptions").toArray();
+            sub = subs.at(index.row()).toObject();
+        }
+
+        SubscriptionWindow *subWindow = openSubWindow();
+
+        subWindow->setSubscription(sub);
+        subWindow->setWindowTitle("Edit subscription");
+    }
+    else if (isConnection(index)) {
+        QJsonObject conn = configObj.value("connections").toArray().at(index.row()).toObject();
+        ConnectionWindow *connWindow = openConnForm();
+
+        connWindow->setConnection(conn);
+        connWindow->setWindowTitle("Edit MQTT connection");
+    }
 }
 
 void MainWindow::loadTree()
@@ -188,6 +214,16 @@ int MainWindow::getConnIndex()
         index = item.row();
     }
     return index;
+}
+
+bool MainWindow::isConnection(const QModelIndex &index)
+{
+    return !index.parent().isValid();
+}
+
+bool MainWindow::isSubscription(const QModelIndex &index)
+{
+    return index.parent().isValid();
 }
 
 void MainWindow::connectToDB()

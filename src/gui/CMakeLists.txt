@@ -24,9 +24,9 @@ set(PROJECT_SOURCES
         qcustomplot.h
         qjsontree.cpp
         qjsontree.h
-        connectionform.cpp
-        connectionform.h
-        connectionform.ui
+        connectionwindow.cpp
+        connectionwindow.h
+        connectionwindow.ui
         subscriptionwindow.cpp
         subscriptionwindow.h
         subscriptionwindow.ui

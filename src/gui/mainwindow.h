@@ -15,7 +15,7 @@
 #include "Point.h"
 #include "qcustomplot.h"
 #include "qjsontree.h"
-#include "connectionform.h"
+#include "connectionwindow.h"
 #include "subscriptionwindow.h"
 #include "utils.h"
 
@@ -39,6 +39,8 @@ public:
     void addConnection(QJsonObject connInfo);
     void addSubscription(QJsonObject subInfo);
     int getConnIndex();
+    bool isConnection(const QModelIndex &index);
+    bool isSubscription(const QModelIndex &index);
 
     void connectToDB();
     void plotMeasurement();
@@ -51,8 +53,8 @@ public:
                   QString topic = QString());
 
 private slots:
-    void openConnForm();
-    void openSubWindow();
+    ConnectionWindow* openConnForm();
+    SubscriptionWindow* openSubWindow();
     void openConfigWindow(const QModelIndex &index);
     void loadTree();
     void saveConfig();
