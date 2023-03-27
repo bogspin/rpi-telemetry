@@ -12,6 +12,7 @@ QMqttData::QMqttData(QObject *parent) : QObject(parent)
 QMqttData::~QMqttData()
 {
     client->disconnect();
+
     delete client;
 }
 

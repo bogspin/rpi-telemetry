@@ -30,8 +30,6 @@ set(PROJECT_SOURCES
         subscriptionwindow.cpp
         subscriptionwindow.h
         subscriptionwindow.ui
-        graphdata.cpp
-        graphdata.h
         utils.cpp
         utils.h
 )

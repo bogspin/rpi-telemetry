@@ -17,7 +17,6 @@
 #include "qjsontree.h"
 #include "connectionform.h"
 #include "subscriptionwindow.h"
-#include "graphdata.h"
 #include "utils.h"
 
 QT_BEGIN_NAMESPACE
@@ -43,20 +42,24 @@ public:
 
     void connectToDB();
     void plotMeasurement();
-    void getMeasurement(QString hostname, QString topic = QString());
 
-    void setPlotStyle();
-    void makePlot();
+    void addPlot();
+    void updatePlot(QCustomPlot *plot);
+    void removePlot();
+    void setPlotStyle(QCustomPlot *plot);
+    void setGraphData(QCPGraph *graph, QString hostname,
+                  QString topic = QString());
 
 private slots:
     void openConnForm();
     void openSubWindow();
+    void openConfigWindow(const QModelIndex &index);
     void loadTree();
     void saveConfig();
 
 private:
     Ui::MainWindow *ui;
-    QList<GraphData> graphData;
+    QList<QCustomPlot*> plots;
 
     QFileSystemWatcher configMonitor;
     QJsonObject configObj;

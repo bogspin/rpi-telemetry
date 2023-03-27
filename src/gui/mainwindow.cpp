@@ -8,7 +8,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     QMainWindow::showFullScreen();
     this->setStyleSheet("background-color: #333333;");
-    setPlotStyle();
 
     ui->menuFile->setStyleSheet("QMenu::item{"
                                 "color: rgb(255, 255, 255);"
@@ -26,12 +25,13 @@ MainWindow::MainWindow(QWidget *parent) :
         loadTree();
     });
 
+    connect(ui->configTree, &QTreeView::doubleClicked, this, &MainWindow::openConfigWindow);
+
     setConfigPath("../../conf.json");
     loadConfigJson();
     loadTree();
 
     connectToDB();
-    //getValues("mqtt3.thingspeak.com", "channels/1992747/subscribe/fields/field1");
 }
 
 MainWindow::~MainWindow()
@@ -74,6 +74,11 @@ void MainWindow::openSubWindow()
     subWindow->show();
 
     connect(subWindow, &SubscriptionWindow::subscription, this, &MainWindow::addSubscription);
+}
+
+void MainWindow::openConfigWindow(const QModelIndex &index)
+{
+
 }
 
 void MainWindow::loadTree()
@@ -206,97 +211,102 @@ void MainWindow::plotMeasurement()
     if (item.parent().isValid()) {
         hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
         topic = configModel.data(item, Qt::DisplayRole).toString();
-        getMeasurement(hostname, topic);
+        addPlot();
+        QCPGraph *graph = plots.last()->addGraph();
+        setGraphData(graph, hostname, topic);
+        updatePlot(plots.last());
     }
     else {
         hostname = configModel.data(item, Qt::DisplayRole).toString();
+        addPlot();
+
+        QModelIndex child;
+        int i = 0;
+
+        while ((child = item.child(i, 0)).isValid()) {
+            topic = configModel.data(child, Qt::DisplayRole).toString();
+            QCPGraph *graph = plots.last()->addGraph();
+            setGraphData(graph, hostname, topic);
+            i++;
+        }
+        updatePlot(plots.last());
     }
 }
 
-void MainWindow::getMeasurement(QString hostname, QString topic)
+void MainWindow::addPlot()
 {
-    graphData.append(GraphData());
-    graphData.last().setHostname(hostname);
-    graphData.last().setTopic(topic);
+    QCustomPlot *plot = new QCustomPlot();
+    QPoint gridPos = plotPosition(plots.size());
 
-    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'";
+    plots.append(plot);
+    QVBoxLayout *verticalLayout = new QVBoxLayout();
+    QToolBar *bar = new QToolBar();
+    QAction *closePlot = new QAction("Close");
+    connect(closePlot, &QAction::triggered, this, &MainWindow::removePlot);
+    bar->setStyleSheet("background-color: #505050;"
+                       "color: #FFFFFF;");
+    bar->addAction(closePlot);
 
-    for (auto i: db->query(query.toStdString())) {
-        //qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());*/
-        graphData.last().addPoint(valueToDouble(i.getFields()), timestampToDouble(i.getTimestamp()));
-    }
-
-    makePlot();
+    // verticalLayout->addWidget(bar);
+    verticalLayout->addWidget(plot);
+    ui->gridLayout->addLayout(verticalLayout, gridPos.x(), gridPos.y());
+    setPlotStyle(plot);
 }
 
-void MainWindow::setPlotStyle()
+void MainWindow::updatePlot(QCustomPlot *plot)
 {
-    ui->customPlot->xAxis->setBasePen(QPen(Qt::white, 1));
-    ui->customPlot->yAxis->setBasePen(QPen(Qt::white, 1));
-    ui->customPlot->xAxis->setTickPen(QPen(Qt::white, 1));
-    ui->customPlot->yAxis->setTickPen(QPen(Qt::white, 1));
-    ui->customPlot->xAxis->setSubTickPen(QPen(Qt::white, 1));
-    ui->customPlot->yAxis->setSubTickPen(QPen(Qt::white, 1));
-    ui->customPlot->xAxis->setTickLabelColor(Qt::white);
-    ui->customPlot->yAxis->setTickLabelColor(Qt::white);
-    ui->customPlot->xAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
-    ui->customPlot->yAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
-    ui->customPlot->xAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
-    ui->customPlot->yAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
-    ui->customPlot->xAxis->grid()->setSubGridVisible(true);
-    ui->customPlot->yAxis->grid()->setSubGridVisible(true);
-    ui->customPlot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
-    ui->customPlot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
-    ui->customPlot->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
-    ui->customPlot->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+    QSharedPointer<QCPAxisTickerDateTime> dateTicker(new QCPAxisTickerDateTime);
+    dateTicker->setDateTimeFormat("d MMMM\nyyyy");
+    plot->xAxis->setTicker(dateTicker);
+    plot->rescaleAxes();
+    plot->replot();
+}
+
+void MainWindow::removePlot() {
+    qDebug() << "SADSAFSAFS";
+}
+
+void MainWindow::setPlotStyle(QCustomPlot *plot)
+{
+    plot->xAxis->setBasePen(QPen(Qt::white, 1));
+    plot->yAxis->setBasePen(QPen(Qt::white, 1));
+    plot->xAxis->setTickPen(QPen(Qt::white, 1));
+    plot->yAxis->setTickPen(QPen(Qt::white, 1));
+    plot->xAxis->setSubTickPen(QPen(Qt::white, 1));
+    plot->yAxis->setSubTickPen(QPen(Qt::white, 1));
+    plot->xAxis->setTickLabelColor(Qt::white);
+    plot->yAxis->setTickLabelColor(Qt::white);
+    plot->xAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    plot->yAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    plot->xAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    plot->yAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    plot->xAxis->grid()->setSubGridVisible(true);
+    plot->yAxis->grid()->setSubGridVisible(true);
+    plot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
+    plot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
+    plot->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+    plot->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
     QLinearGradient plotGradient;
     plotGradient.setStart(0, 0);
     plotGradient.setFinalStop(0, 350);
     plotGradient.setColorAt(0, QColor(80, 80, 80));
     plotGradient.setColorAt(1, QColor(50, 50, 50));
-    ui->customPlot->setBackground(plotGradient);
+    plot->setBackground(plotGradient);
     QLinearGradient axisRectGradient;
     axisRectGradient.setStart(0, 0);
     axisRectGradient.setFinalStop(0, 350);
     axisRectGradient.setColorAt(0, QColor(80, 80, 80));
     axisRectGradient.setColorAt(1, QColor(30, 30, 30));
-    ui->customPlot->axisRect()->setBackground(axisRectGradient);
+    plot->axisRect()->setBackground(axisRectGradient);
 }
 
-void MainWindow::makePlot()
+void MainWindow::setGraphData(QCPGraph *graph, QString hostname, QString topic)
 {
-    // create and configure plottables:
-    QCPGraph *graph = ui->customPlot->addGraph();
+    for (auto i: db->query(createQuery(hostname, topic))) {
+        //qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());
+        graph->addData(timestampToDouble(i.getTimestamp()), valueToDouble(i.getFields()));
+    }
 
-    graph->setData(graphData.last().getTimestamp(), graphData.last().getValue(), true);
-    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1.5), QBrush(Qt::white), 15));
+    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::white), 10));
     graph->setPen(QPen(QColor(180, 180, 180), 4));
-    ui->customPlot->replot();
-    ui->customPlot->rescaleAxes();
-
-    /*QCPGraph *graph2 = ui->customPlot->addGraph();
-    graph2->setData(x2, y2);
-    graph2->setPen(Qt::NoPen);
-    graph2->setBrush(QColor(200, 200, 200, 20));
-    graph2->setChannelFillGraph(graph1);
-
-    QCPBars *bars1 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
-    bars1->setWidth(9/(double)x3.size());
-    bars1->setData(x3, y3);
-    bars1->setPen(Qt::NoPen);
-    bars1->setBrush(QColor(10, 140, 70, 160));
-
-    QCPBars *bars2 = new QCPBars(ui->customPlot->xAxis, ui->customPlot->yAxis);
-    bars2->setWidth(9/(double)x4.size());
-    bars2->setData(x4, y4);
-    bars2->setPen(Qt::NoPen);
-    bars2->setBrush(QColor(10, 100, 50, 70));
-    bars2->moveAbove(bars1);
-
-    // move bars above graphs and grid below bars:
-    ui->customPlot->addLayer("abovemain", ui->customPlot->layer("main"), QCustomPlot::limAbove);
-    ui->customPlot->addLayer("belowmain", ui->customPlot->layer("main"), QCustomPlot::limBelow);
-    graph1->setLayer("abovemain");
-    ui->customPlot->xAxis->grid()->setLayer("belowmain");
-    ui->customPlot->yAxis->grid()->setLayer("belowmain");*/
 }

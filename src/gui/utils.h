@@ -1,11 +1,19 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdlib.h>
 #include <QString>
+#include <QPoint>
+#include <stdlib.h>
 #include <chrono>
+
+#define MAX_PLOTS 4
 
 double valueToDouble(std::string valueAsString);
 double timestampToDouble(std::chrono::time_point<std::chrono::system_clock> timestamp);
+
+std::string createQuery(QString hostname, QString topic);
+std::string createQuery(QString hostname, QString topic, QString time);
+
+QPoint plotPosition(int noOfPlots);
 
 #endif // UTILS_H

@@ -1,13 +1,17 @@
-#ifndef GRAPHDATA_H
-#define GRAPHDATA_H
+#ifndef PLOTDATA_H
+#define PLOTDATA_H
 
 #include <QVector>
 #include <QString>
+#include "qcustomplot.h"
 
-class GraphData
+class PlotData : public QCustomPlot
 {
 public:
-    GraphData();
+    PlotData();
+    ~PlotData();
+    PlotData& operator=(const PlotData&) = delete;
+    PlotData(const PlotData&) = delete;
 
     void setValue(const QVector<double> &value);
     void setTimestamp(const QVector<double> &timestamp);
@@ -27,4 +31,4 @@ private:
     QString topic;
 };
 
-#endif // GRAPHDATA_H
+#endif // PLOTDATA_H

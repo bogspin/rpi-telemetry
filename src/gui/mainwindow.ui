@@ -102,15 +102,7 @@
          <height>411</height>
         </rect>
        </property>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QCustomPlot" name="customPlot" native="true"/>
-          </item>
-         </layout>
-        </item>
-       </layout>
+       <layout class="QGridLayout" name="gridLayout"/>
       </widget>
      </widget>
     </item>
@@ -154,14 +146,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>QCustomPlot</class>
-   <extends>QWidget</extends>
-   <header>qcustomplot.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
