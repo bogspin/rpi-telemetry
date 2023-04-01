@@ -34,6 +34,8 @@ set(PROJECT_SOURCES
         utils.h
 )
 
+qt5_add_resources(PROJECT_SOURCES icons.qrc)
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(gui
         ${PROJECT_SOURCES}

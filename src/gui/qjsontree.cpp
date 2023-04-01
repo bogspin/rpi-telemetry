@@ -146,7 +146,7 @@ QJsonTree::QJsonTree(QObject *parent)
     : QAbstractItemModel(parent)
     , mRootItem{new QJsonTreeItem}
 {
-    mHeaders.append("Connections");
+    mHeaders.append("Configuration");
 }
 
 QJsonTree::~QJsonTree()

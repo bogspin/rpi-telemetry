@@ -18,20 +18,21 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnForm);
     connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
+    connect(ui->removeButton, &QToolButton::clicked, this, &MainWindow::removeButton);
     connect(ui->plotButton, &QPushButton::clicked, this, &MainWindow::plotMeasurement);
+    connect(ui->configTree, &QTreeView::doubleClicked, this, &MainWindow::openConfigWindow);
 
     connect(this, &MainWindow::configChanged, this, &MainWindow::saveConfig);
-    connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this](QString path) {
-        loadTree();
+    connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this]() {
+        populateTree();
     });
-
-    connect(ui->configTree, &QTreeView::doubleClicked, this, &MainWindow::openConfigWindow);
 
     setConfigPath("../../conf.json");
     loadConfigJson();
-    loadTree();
+    populateTree();
 
     connectToDB();
+    startService();
 }
 
 MainWindow::~MainWindow()
@@ -44,7 +45,7 @@ ConnectionWindow* MainWindow::openConnForm()
 {
     auto connForm = new ConnectionWindow();
 
-    connForm->setWindowTitle("Add MQTT connection");
+    connForm->setWindowTitle("Add MQTT client");
     connForm->setWindowState(Qt::WindowActive);
     QScreen *screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
@@ -96,18 +97,30 @@ void MainWindow::openConfigWindow(const QModelIndex &index)
         SubscriptionWindow *subWindow = openSubWindow();
 
         subWindow->setSubscription(sub);
-        subWindow->setWindowTitle("Edit subscription");
+        subWindow->setWindowTitle("Configure subscription");
     }
     else if (isConnection(index)) {
         QJsonObject conn = configObj.value("connections").toArray().at(index.row()).toObject();
         ConnectionWindow *connWindow = openConnForm();
 
         connWindow->setConnection(conn);
-        connWindow->setWindowTitle("Edit MQTT connection");
+        connWindow->setWindowTitle("Configure MQTT client");
     }
 }
 
-void MainWindow::loadTree()
+void MainWindow::removeButton()
+{
+    QModelIndex index = ui->configTree->currentIndex();
+
+    if (isSubscription(index)) {
+        removeSubscription(index.parent().row(), index.row());
+    }
+    else if (isConnection(index)) {
+        removeConnection(index.row());
+    }
+}
+
+void MainWindow::populateTree()
 {
     configModel.loadJson(configObj.value("connections").toArray());
     ui->configTree->setModel(&configModel);
@@ -198,6 +211,52 @@ void MainWindow::addSubscription(QJsonObject subInfo)
     configObj.insert("connections", connections);
 
     emit configChanged();
+}
+
+void MainWindow::removeConnection(int connNumber)
+{
+    QJsonArray connections;
+
+    if (configObj.contains("connections")) {
+        connections = configObj.value("connections").toArray();
+    } else {
+        return;
+    }
+
+    if (connNumber < connections.size()) {
+        connections.removeAt(connNumber);
+        configObj.remove("connections");
+        configObj.insert("connections", connections);
+
+        emit configChanged();
+    }
+}
+
+void MainWindow::removeSubscription(int connNumber, int subNumber)
+{
+    QJsonArray connections, subs;
+    QJsonObject conn;
+
+    if (configObj.contains("connections")) {
+        connections = configObj.value("connections").toArray();
+    } else {
+        return;
+    }
+
+    conn = connections.at(connNumber).toObject();
+    if (conn.contains("subscriptions")) {
+        subs = conn.value("subscriptions").toArray();
+        conn.remove("subscriptions");
+    }
+    if (subNumber < subs.size()) {
+        subs.removeAt(subNumber);
+        conn.insert("subscriptions", subs);
+        connections.replace(connNumber, conn);
+        configObj.remove("connections");
+        configObj.insert("connections", connections);
+
+        emit configChanged();
+    }
 }
 
 int MainWindow::getConnIndex()

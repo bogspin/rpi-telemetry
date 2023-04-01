@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <string.h>
+#include <unistd.h>
 #include "InfluxDBFactory.h"
 #include "Point.h"
 #include "qcustomplot.h"
@@ -38,6 +39,8 @@ public:
     QJsonParseError loadConfigJson();
     void addConnection(QJsonObject connInfo);
     void addSubscription(QJsonObject subInfo);
+    void removeConnection(int connNumber);
+    void removeSubscription(int connNumber, int subNumber);
     int getConnIndex();
     bool isConnection(const QModelIndex &index);
     bool isSubscription(const QModelIndex &index);
@@ -56,7 +59,8 @@ private slots:
     ConnectionWindow* openConnForm();
     SubscriptionWindow* openSubWindow();
     void openConfigWindow(const QModelIndex &index);
-    void loadTree();
+    void removeButton();
+    void populateTree();
     void saveConfig();
 
 private:

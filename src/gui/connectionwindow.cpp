@@ -20,6 +20,10 @@ void ConnectionWindow::setConnection(QJsonObject conn)
     ui->lineEditUser->setText(conn.value("username").toString());
     ui->lineEditPassword->setText(conn.value("password").toString());
     ui->spinBoxPort->setValue(conn.value("port").toInt());
+
+    if (conn.contains("subscriptions")) {
+        connInfo.insert("subscriptions", conn.value("subscriptions"));
+    }
 }
 
 void ConnectionWindow::okClicked()
