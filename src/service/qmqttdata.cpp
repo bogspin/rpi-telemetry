@@ -31,6 +31,18 @@ void QMqttData::sendMessage(QMqttMessage msg)
     emit messageReceived(this->client->hostname(), msg);
 }
 
+QMqttClient* QMqttData::getClient()
+{
+    return this->client;
+}
+
+void QMqttData::getClientInfo()
+{
+    qDebug() << client->hostname();
+    qDebug() << client->port();
+    qDebug() << client->state();
+}
+
 void QMqttData::setClientInfo(QString hostname, quint16 port, QString clientID,
                              QString username, QString password)
 {
@@ -70,39 +82,54 @@ QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
 
 void QMqttData::updateClientStatus(QMqttClient::ClientState state)
 {
-    const QString content = QDateTime::currentDateTime().toString()
-                    + QLatin1String(": State Change")
-                    + QString::number(state)
-                    + QLatin1Char('\n');
-    qDebug() << content;
+    QString clientLog = QDateTime::currentDateTime().toString()
+            + QString(": ") + this->client->hostname() + QString(" ");
+
+    switch (state) {
+    case QMqttClient::Disconnected: {
+        clientLog += QString("Disconnected");
+        break;
+    }
+    case QMqttClient::Connecting: {
+        clientLog += QString("Connecting");
+        break;
+    }
+    case QMqttClient::Connected: {
+        clientLog += QString("Connected");
+        break;
+    }
+    default: {
+        clientLog += QString("--Unknown--");
+        break;
+    }
+    }
+
+    qDebug() << clientLog;
 }
 
 void QMqttData::updateSubStatus(QMqttSubscription::SubscriptionState state)
 {
+    QString subLog = QDateTime::currentDateTime().toString() + QString(": ");
+
     switch (state) {
     case QMqttSubscription::Unsubscribed:
-        qDebug() << ("Unsubscribed");
+        subLog += QString("Unsubscribed");
         break;
     case QMqttSubscription::SubscriptionPending:
-        qDebug() << ("Pending");
+        subLog += QString("Pending");
         break;
     case QMqttSubscription::Subscribed:
-        qDebug() << ("Subscribed");
+        subLog += QString("Subscribed");
         break;
     case QMqttSubscription::Error:
-        qDebug() << ("Error");
+        subLog += QString("Error");
         break;
     default:
-        qDebug() << ("--Unknown--");
+        subLog += QString("--Unknown--");
         break;
     }
-}
 
-void QMqttData::getClientInfo()
-{
-    qDebug() << client->hostname();
-    qDebug() << client->port();
-    qDebug() << client->state();
+    qDebug() << subLog;
 }
 
 void QMqttData::unsubscribeFromTopic(const QString &topic)
@@ -123,11 +150,6 @@ void QMqttData::unsubscribeAll()
         sub->unsubscribe();
     }
     topics.clear();
-}
-
-QMqttClient* QMqttData::getClient()
-{
-    return this->client;
 }
 
 QStringList QMqttData::getTopics()

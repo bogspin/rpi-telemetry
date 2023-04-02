@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionQuit, &QAction::triggered, this, [] {
         QApplication::quit();
     });
+    connect(ui->actionStart, &QAction::triggered, this, &MainWindow::startService);
+    connect(ui->actionStop, &QAction::triggered, this, &MainWindow::stopService);
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnForm);
     connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
     connect(ui->removeButton, &QToolButton::clicked, this, &MainWindow::removeButton);
@@ -39,6 +41,16 @@ MainWindow::~MainWindow()
 {
     delete ui;
     qApp->quit();
+}
+
+void MainWindow::startService()
+{
+    system("sudo systemctl start mqtt-service.service");
+}
+
+void MainWindow::stopService()
+{
+    system("sudo systemctl stop mqtt-service.service");
 }
 
 ConnectionWindow* MainWindow::openConnForm()

@@ -34,6 +34,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void startService();
+    void stopService();
+
     QString getConfigPath();
     void setConfigPath(const QString &path);
     QJsonParseError loadConfigJson();

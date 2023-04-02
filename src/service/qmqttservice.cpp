@@ -2,7 +2,7 @@
 
 QMqttService::QMqttService(QObject *parent) : QObject(parent)
 {
-
+    connectToDB();
 }
 
 QMqttService::~QMqttService()
@@ -19,7 +19,17 @@ void QMqttService::startService()
 {
     QString path = configFile.files().constFirst();
     QFile inFile(path);
-    inFile.open(QIODevice::ReadOnly|QIODevice::Text);
+
+    if (!inFile.exists()) {
+        qDebug() << "Error: No config file found at path " << path;
+        exit(1);
+    }
+
+    if (!inFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Error: Could not open configuration file!";
+        exit(1);
+    }
+
     QByteArray data = inFile.readAll();
     QJsonParseError parseErr;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &parseErr);
@@ -29,10 +39,9 @@ void QMqttService::startService()
         conf = jsonDoc.object();
     }
     else {
-        return;
+        qDebug() << "Error: Check for syntax errors in the configuration JSON!";
+        exit(1);
     }
-
-    connectToDB();
 
     if (conf.contains("connections")) {
         QJsonArray connections = conf.value("connections").toArray();

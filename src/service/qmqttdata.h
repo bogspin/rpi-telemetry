@@ -15,6 +15,7 @@ public:
     explicit QMqttData(QObject *parent = nullptr);
     ~QMqttData();
 
+    QMqttClient* getClient();
     void getClientInfo();
     void setClientInfo(QString hostname, quint16 port, QString clientID = QString(),
                       QString username = QString(), QString password = QString());
@@ -24,7 +25,6 @@ public:
     QStringList getTopics();
     void updateClientStatus(QMqttClient::ClientState state);
     void updateSubStatus(QMqttSubscription::SubscriptionState state);
-    QMqttClient* getClient();
 
     void onConnect();
     void onDisconnect();
