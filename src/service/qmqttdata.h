@@ -16,8 +16,7 @@ public:
     ~QMqttData();
 
     QMqttClient* getClient();
-    void getClientInfo();
-    void setClientInfo(QString hostname, quint16 port, QString clientID = QString(),
+    void setClient(QString hostname, quint16 port, QString clientID = QString(),
                       QString username = QString(), QString password = QString());
     QMqttSubscription* subscribeToTopic(const QString &topic, quint8 qos);
     void unsubscribeFromTopic(const QString &topic);

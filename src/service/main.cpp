@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    QMqttService service;
+    QMqttService *service = QMqttService::getInstance();
 
     switch (argc) {
     case 1: {
@@ -17,11 +17,11 @@ int main(int argc, char *argv[])
         dir.cdUp();
 
         configPath = dir.absolutePath() + "/conf.json";
-        service.setConfigFile(configPath);
+        service->setConfigFile(configPath);
         break;
     }
     case 2: {
-        service.setConfigFile(argv[1]);
+        service->setConfigFile(argv[1]);
     }
     default: {
         qDebug() << "Error: Too many arguments provided!";
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     }
     }
 
-    service.startService();
+    service->startService();
 
     return a.exec();
 }

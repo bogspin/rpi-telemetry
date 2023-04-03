@@ -1,5 +1,7 @@
 #include "qmqttservice.h"
 
+QMqttService* QMqttService::serviceInstance = nullptr;
+
 QMqttService::QMqttService(QObject *parent) : QObject(parent)
 {
     connectToDB();
@@ -7,7 +9,19 @@ QMqttService::QMqttService(QObject *parent) : QObject(parent)
 
 QMqttService::~QMqttService()
 {
+    stopService();
+}
 
+QMqttService *QMqttService::getInstance()
+{
+    if (serviceInstance == NULL) {
+        serviceInstance = new QMqttService();
+
+        return serviceInstance;
+    }
+    else {
+        return serviceInstance;
+    }
 }
 
 bool QMqttService::setConfigFile(const QString &path)
@@ -60,6 +74,21 @@ void QMqttService::startService()
             }
         }
     }
+}
+
+void QMqttService::stopService()
+{
+    for (QMqttData* conn : mqttConnections) {
+        delete conn;
+    }
+
+    mqttConnections.clear();
+}
+
+void QMqttService::restartService()
+{
+    stopService();
+    startService();
 }
 
 QMqttData* QMqttService::addConnection(const QJsonObject &conn)
@@ -125,6 +154,7 @@ void QMqttService::writeToDB(const QString &hostname, const QMqttMessage &msg)
     db->write(influxdb::Point{hostname.toStdString()}.
               addTag("topic", msg.topic().name().toStdString()).
               addField("value", msg.payload().toFloat()));
-    qDebug() << msg.payload();
+
+    qDebug() << msg.topic().name() + ": " + msg.payload();
 }
 

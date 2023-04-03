@@ -11,6 +11,7 @@ QMqttData::QMqttData(QObject *parent) : QObject(parent)
 
 QMqttData::~QMqttData()
 {
+    unsubscribeAll();
     client->disconnect();
 
     delete client;
@@ -36,14 +37,7 @@ QMqttClient* QMqttData::getClient()
     return this->client;
 }
 
-void QMqttData::getClientInfo()
-{
-    qDebug() << client->hostname();
-    qDebug() << client->port();
-    qDebug() << client->state();
-}
-
-void QMqttData::setClientInfo(QString hostname, quint16 port, QString clientID,
+void QMqttData::setClient(QString hostname, quint16 port, QString clientID,
                              QString username, QString password)
 {
     this->client->setHostname(hostname);
@@ -109,7 +103,9 @@ void QMqttData::updateClientStatus(QMqttClient::ClientState state)
 
 void QMqttData::updateSubStatus(QMqttSubscription::SubscriptionState state)
 {
-    QString subLog = QDateTime::currentDateTime().toString() + QString(": ");
+    QMqttSubscription *sub = qobject_cast<QMqttSubscription*>(sender());
+    QString subLog = QDateTime::currentDateTime().toString()
+            + QString(": ") + sub->topic().filter() + QString(" ");
 
     switch (state) {
     case QMqttSubscription::Unsubscribed:
