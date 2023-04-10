@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     connect(ui->actionStart, &QAction::triggered, this, &MainWindow::startService);
     connect(ui->actionStop, &QAction::triggered, this, &MainWindow::stopService);
+    connect(ui->actionRestart, &QAction::triggered, this, &MainWindow::restartService);
+    connect(ui->actionStatus, &QAction::triggered, this, &MainWindow::serviceStatus);
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnForm);
     connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
     connect(ui->removeButton, &QToolButton::clicked, this, &MainWindow::removeButton);
@@ -51,6 +53,41 @@ void MainWindow::startService()
 void MainWindow::stopService()
 {
     system("sudo systemctl stop mqtt-service.service");
+}
+
+void MainWindow::restartService()
+{
+    system("sudo systemctl restart mqtt-service.service");
+}
+
+void MainWindow::serviceStatus()
+{
+    FILE *fp;
+    char path[1035];
+
+    fp = popen("sudo systemctl status mqtt-service.service", "r");
+    if (fp == NULL) {
+        QMessageBox::warning(this, "Error", "Failed to check service status!");
+    }
+
+    QPoint gridPos = plotPosition(widgets.size());
+    QTextBrowser *status = new QTextBrowser(this);
+    QVBoxLayout *verticalLayout = new QVBoxLayout();
+    QString statusText;
+
+    while (fgets(path, sizeof(path), fp) != NULL) {
+        statusText.append(path);
+    }
+
+    status->setText(statusText);
+    status->setStyleSheet("color: rgb(255, 255, 255);");
+    verticalLayout->addWidget(status);
+    ui->gridLayout->addLayout(verticalLayout, gridPos.x(), gridPos.y());
+
+    widgets.append(status);
+    resizeWidgets();
+
+    pclose(fp);
 }
 
 ConnectionWindow* MainWindow::openConnForm()
@@ -315,37 +352,38 @@ void MainWindow::plotMeasurement()
         return;
     }
 
+    addPlot();
+    QCustomPlot *plot = qobject_cast<QCustomPlot*>(widgets.last());
+
     if (item.parent().isValid()) {
         hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
         topic = configModel.data(item, Qt::DisplayRole).toString();
-        addPlot();
-        QCPGraph *graph = plots.last()->addGraph();
+        QCPGraph *graph = plot->addGraph();
         setGraphData(graph, hostname, topic);
-        updatePlot(plots.last());
+        updatePlot(plot);
     }
     else {
         hostname = configModel.data(item, Qt::DisplayRole).toString();
-        addPlot();
 
         QModelIndex child;
         int i = 0;
 
         while ((child = item.child(i, 0)).isValid()) {
             topic = configModel.data(child, Qt::DisplayRole).toString();
-            QCPGraph *graph = plots.last()->addGraph();
+            QCPGraph *graph = plot->addGraph();
             setGraphData(graph, hostname, topic);
             i++;
         }
-        updatePlot(plots.last());
+        updatePlot(plot);
     }
 }
 
 void MainWindow::addPlot()
 {
     QCustomPlot *plot = new QCustomPlot();
-    QPoint gridPos = plotPosition(plots.size());
+    QPoint gridPos = plotPosition(widgets.size());
 
-    plots.append(plot);
+    widgets.append(plot);
     QVBoxLayout *verticalLayout = new QVBoxLayout();
     QToolBar *bar = new QToolBar();
     QAction *closePlot = new QAction("Close");
@@ -353,11 +391,11 @@ void MainWindow::addPlot()
     bar->setStyleSheet("background-color: #505050;"
                        "color: #FFFFFF;");
     bar->addAction(closePlot);
-
     // verticalLayout->addWidget(bar);
     verticalLayout->addWidget(plot);
     ui->gridLayout->addLayout(verticalLayout, gridPos.x(), gridPos.y());
     setPlotStyle(plot);
+    resizeWidgets();
 }
 
 void MainWindow::updatePlot(QCustomPlot *plot)
@@ -416,4 +454,14 @@ void MainWindow::setGraphData(QCPGraph *graph, QString hostname, QString topic)
 
     graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::white), 10));
     graph->setPen(QPen(QColor(180, 180, 180), 4));
+}
+
+void MainWindow::resizeWidgets()
+{
+    for (int c = 0; c < ui->gridLayout->columnCount(); c++) {
+        ui->gridLayout->setColumnStretch(c, 1);
+    }
+    for (int r = 0; r < ui->gridLayout->rowCount(); r++) {
+        ui->gridLayout->setRowStretch(r, 1);
+    }
 }

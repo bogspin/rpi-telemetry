@@ -36,6 +36,8 @@ public:
 
     void startService();
     void stopService();
+    void restartService();
+    void serviceStatus();
 
     QString getConfigPath();
     void setConfigPath(const QString &path);
@@ -57,6 +59,7 @@ public:
     void setPlotStyle(QCustomPlot *plot);
     void setGraphData(QCPGraph *graph, QString hostname,
                   QString topic = QString());
+    void resizeWidgets();
 
 private slots:
     ConnectionWindow* openConnForm();
@@ -68,7 +71,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QList<QCustomPlot*> plots;
+    QList<QWidget*> widgets;
 
     QFileSystemWatcher configMonitor;
     QJsonObject configObj;
