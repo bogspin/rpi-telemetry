@@ -76,8 +76,7 @@ QMqttSubscription* QMqttData::subscribeToTopic(const QString &topic, quint8 qos)
 
 void QMqttData::updateClientStatus(QMqttClient::ClientState state)
 {
-    QString clientLog = QDateTime::currentDateTime().toString()
-            + QString(": ") + this->client->hostname() + QString(" ");
+    QString clientLog = this->client->hostname() + QString(": ");
 
     switch (state) {
     case QMqttClient::Disconnected: {
@@ -104,8 +103,7 @@ void QMqttData::updateClientStatus(QMqttClient::ClientState state)
 void QMqttData::updateSubStatus(QMqttSubscription::SubscriptionState state)
 {
     QMqttSubscription *sub = qobject_cast<QMqttSubscription*>(sender());
-    QString subLog = QDateTime::currentDateTime().toString()
-            + QString(": ") + sub->topic().filter() + QString(" ");
+    QString subLog = sub->topic().filter() + QString(": ");
 
     switch (state) {
     case QMqttSubscription::Unsubscribed:
