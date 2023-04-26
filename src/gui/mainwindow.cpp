@@ -344,6 +344,16 @@ void MainWindow::connectToDB()
 
 void MainWindow::plotMeasurement()
 {
+    auto dateRange = new DateRangeSelector();
+
+    dateRange->setWindowState(Qt::WindowActive);
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect screenGeometry = screen->geometry();
+    int x = (screenGeometry.width() - dateRange->width()) / 2;
+    int y = (screenGeometry.height() - dateRange->height()) / 2;
+    dateRange->move(x, y);
+    dateRange->show();
+
     QString hostname, topic;
     auto item = ui->configTree->currentIndex();
 

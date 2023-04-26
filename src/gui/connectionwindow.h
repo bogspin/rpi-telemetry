@@ -35,4 +35,4 @@ private:
     QJsonObject connInfo;
 };
 
-#endif // ADDBROKER_H
+#endif // CONNECTIONWINDOW_H

@@ -18,6 +18,7 @@
 #include "qjsontree.h"
 #include "connectionwindow.h"
 #include "subscriptionwindow.h"
+#include "daterangeselector.h"
 #include "utils.h"
 
 QT_BEGIN_NAMESPACE

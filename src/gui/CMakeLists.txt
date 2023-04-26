@@ -30,6 +30,9 @@ set(PROJECT_SOURCES
         subscriptionwindow.cpp
         subscriptionwindow.h
         subscriptionwindow.ui
+        daterangeselector.cpp
+        daterangeselector.h
+        daterangeselector.ui
         utils.cpp
         utils.h
 )
