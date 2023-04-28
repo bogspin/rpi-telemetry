@@ -1,20 +1,21 @@
 #include "daterangeselector.h"
 #include "src_autogen/include/ui_daterangeselector.h"
+#include <QDebug>
 
 DateRangeSelector::DateRangeSelector(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::DateRangeSelector)
 {
     ui->setupUi(this);
+
+    ui->endTime->setDateTime(QDateTime::currentDateTime());
+
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &DateRangeSelector::okClicked);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &DateRangeSelector::cancelClicked);
 }
 
 void DateRangeSelector::okClicked()
 {
-    if (ui->checkBox->isChecked()) {
-        emit allTime();
-        this->close();
-    }
-
     qint64 startTimestamp, endTimestamp;
 
     startDate.setDate(ui->startCalendar->selectedDate());
@@ -24,7 +25,7 @@ void DateRangeSelector::okClicked()
     startTimestamp = startDate.toMSecsSinceEpoch();
     endTimestamp = endDate.toMSecsSinceEpoch();
 
-    emit timestampRange(startTimestamp, endTimestamp);
+    emit timestampRange(startTimestamp, endTimestamp, ui->checkBox->isChecked());
     this->close();
 }
 

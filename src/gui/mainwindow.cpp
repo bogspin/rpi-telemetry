@@ -20,10 +20,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionStop, &QAction::triggered, this, &MainWindow::stopService);
     connect(ui->actionRestart, &QAction::triggered, this, &MainWindow::restartService);
     connect(ui->actionStatus, &QAction::triggered, this, &MainWindow::serviceStatus);
-    connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnForm);
-    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
     connect(ui->removeButton, &QToolButton::clicked, this, &MainWindow::removeButton);
-    connect(ui->plotButton, &QPushButton::clicked, this, &MainWindow::plotMeasurement);
+    connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::openConnWindow);
+    connect(ui->subscribeButton, &QPushButton::clicked, this, &MainWindow::openSubWindow);
+    connect(ui->plotButton, &QPushButton::clicked, this, &MainWindow::openDateRangeSelector);
     connect(ui->configTree, &QTreeView::doubleClicked, this, &MainWindow::openConfigWindow);
 
     connect(this, &MainWindow::configChanged, this, &MainWindow::saveConfig);
@@ -90,22 +90,22 @@ void MainWindow::serviceStatus()
     pclose(fp);
 }
 
-ConnectionWindow* MainWindow::openConnForm()
+ConnectionWindow* MainWindow::openConnWindow()
 {
-    auto connForm = new ConnectionWindow();
+    ConnectionWindow* connWindow = new ConnectionWindow();
 
-    connForm->setWindowTitle("Add MQTT client");
-    connForm->setWindowState(Qt::WindowActive);
+    connWindow->setWindowTitle("Add MQTT client");
+    connWindow->setWindowState(Qt::WindowActive);
     QScreen *screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
-    int x = (screenGeometry.width() - connForm->width()) / 2;
-    int y = (screenGeometry.height() - connForm->height()) / 2;
-    connForm->move(x, y);
-    connForm->show();
+    int x = (screenGeometry.width() - connWindow->width()) / 2;
+    int y = (screenGeometry.height() - connWindow->height()) / 2;
+    connWindow->move(x, y);
+    connWindow->show();
 
-    connect(connForm, &ConnectionWindow::connection, this, &MainWindow::addConnection);
+    connect(connWindow, &ConnectionWindow::connection, this, &MainWindow::addConnection);
 
-    return connForm;
+    return connWindow;
 }
 
 SubscriptionWindow* MainWindow::openSubWindow()
@@ -116,7 +116,7 @@ SubscriptionWindow* MainWindow::openSubWindow()
         return nullptr;
     }
 
-    auto subWindow = new SubscriptionWindow();
+    SubscriptionWindow* subWindow = new SubscriptionWindow();
     subWindow->setWindowTitle("Subscribe to topic");
     subWindow->setWindowState(Qt::WindowActive);
     QScreen *screen = QGuiApplication::primaryScreen();
@@ -129,6 +129,30 @@ SubscriptionWindow* MainWindow::openSubWindow()
     connect(subWindow, &SubscriptionWindow::subscription, this, &MainWindow::addSubscription);
 
     return subWindow;
+}
+
+DateRangeSelector* MainWindow::openDateRangeSelector()
+{
+    auto item = ui->configTree->currentIndex();
+
+    if (!item.isValid()) {
+        QMessageBox::warning(this, "No selections", "First click on a topic to plot its logged data!");
+        return nullptr;
+    }
+
+    DateRangeSelector* dateRange = new DateRangeSelector();
+
+    dateRange->setWindowState(Qt::WindowActive);
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect screenGeometry = screen->geometry();
+    int x = (screenGeometry.width() - dateRange->width()) / 2;
+    int y = (screenGeometry.height() - dateRange->height()) / 2;
+    dateRange->move(x, y);
+    dateRange->show();
+
+    connect(dateRange, &DateRangeSelector::timestampRange, this, &MainWindow::plotMeasurement);
+
+    return dateRange;
 }
 
 void MainWindow::openConfigWindow(const QModelIndex &index)
@@ -150,7 +174,7 @@ void MainWindow::openConfigWindow(const QModelIndex &index)
     }
     else if (isConnection(index)) {
         QJsonObject conn = configObj.value("connections").toArray().at(index.row()).toObject();
-        ConnectionWindow *connWindow = openConnForm();
+        ConnectionWindow *connWindow = openConnWindow();
 
         connWindow->setConnection(conn);
         connWindow->setWindowTitle("Configure MQTT client");
@@ -342,18 +366,8 @@ void MainWindow::connectToDB()
     db->createDatabaseIfNotExists();
 }
 
-void MainWindow::plotMeasurement()
+void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 {
-    auto dateRange = new DateRangeSelector();
-
-    dateRange->setWindowState(Qt::WindowActive);
-    QScreen *screen = QGuiApplication::primaryScreen();
-    QRect screenGeometry = screen->geometry();
-    int x = (screenGeometry.width() - dateRange->width()) / 2;
-    int y = (screenGeometry.height() - dateRange->height()) / 2;
-    dateRange->move(x, y);
-    dateRange->show();
-
     QString hostname, topic;
     auto item = ui->configTree->currentIndex();
 
@@ -369,7 +383,7 @@ void MainWindow::plotMeasurement()
         hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
         topic = configModel.data(item, Qt::DisplayRole).toString();
         QCPGraph *graph = plot->addGraph();
-        setGraphData(graph, hostname, topic);
+        setGraphData(graph, hostname, topic, startTime, endTime, allTime);
         updatePlot(plot);
     }
     else {
@@ -381,7 +395,7 @@ void MainWindow::plotMeasurement()
         while ((child = item.child(i, 0)).isValid()) {
             topic = configModel.data(child, Qt::DisplayRole).toString();
             QCPGraph *graph = plot->addGraph();
-            setGraphData(graph, hostname, topic);
+            setGraphData(graph, hostname, topic, startTime, endTime, allTime);
             i++;
         }
         updatePlot(plot);
@@ -411,7 +425,17 @@ void MainWindow::addPlot()
 void MainWindow::updatePlot(QCustomPlot *plot)
 {
     QSharedPointer<QCPAxisTickerDateTime> dateTicker(new QCPAxisTickerDateTime);
-    dateTicker->setDateTimeFormat("d MMMM\nyyyy");
+
+    for (int i = 0; i < plot->graphCount(); i++) {
+        QCPGraph *graph = plot->graph(i);
+        bool foundRange;
+        QCPRange range = graph->data()->keyRange(foundRange);
+        if (range.size() < DAY_SECONDS * 3) {
+            dateTicker->setDateTimeFormat("d/MM/yy\nHH:mm");
+        } else {
+            dateTicker->setDateTimeFormat("d MMMM\nyyyy");
+        }
+    }
     plot->xAxis->setTicker(dateTicker);
     plot->rescaleAxes();
     plot->replot();
@@ -455,10 +479,18 @@ void MainWindow::setPlotStyle(QCustomPlot *plot)
     plot->axisRect()->setBackground(axisRectGradient);
 }
 
-void MainWindow::setGraphData(QCPGraph *graph, QString hostname, QString topic)
+void MainWindow::setGraphData(QCPGraph *graph, QString hostname, QString topic,
+                              qint64 startTime, qint64 endTime, bool allTime)
 {
-    for (auto i: db->query(createQuery(hostname, topic))) {
-        //qDebug()<< QDateTime::fromMSecsSinceEpoch(timestamp.toLongLong());
+    std::vector<influxdb::Point> records;
+
+    if (allTime) {
+        records = db->query(selectQuery(hostname, topic));
+    } else {
+        records = db->query(selectQuery(hostname, topic, startTime, endTime));
+    }
+
+    for (auto i: records) {
         graph->addData(timestampToDouble(i.getTimestamp()), valueToDouble(i.getFields()));
     }
 

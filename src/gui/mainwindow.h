@@ -21,6 +21,8 @@
 #include "daterangeselector.h"
 #include "utils.h"
 
+#define DAY_SECONDS 86400
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -52,19 +54,22 @@ public:
     bool isSubscription(const QModelIndex &index);
 
     void connectToDB();
-    void plotMeasurement();
+    void plotMeasurement(qint64 startTime, qint64 endTime, bool allTime);
 
     void addPlot();
     void updatePlot(QCustomPlot *plot);
     void removePlot();
     void setPlotStyle(QCustomPlot *plot);
     void setGraphData(QCPGraph *graph, QString hostname,
-                  QString topic = QString());
+                      QString topic = QString(),
+                      qint64 startTime = 0, qint64 endTime = 0,
+                      bool allTime = true);
     void resizeWidgets();
 
 private slots:
-    ConnectionWindow* openConnForm();
+    ConnectionWindow* openConnWindow();
     SubscriptionWindow* openSubWindow();
+    DateRangeSelector* openDateRangeSelector();
     void openConfigWindow(const QModelIndex &index);
     void removeButton();
     void populateTree();

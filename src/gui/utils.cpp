@@ -15,15 +15,18 @@ double timestampToDouble(std::chrono::time_point<std::chrono::system_clock> time
     return std::chrono::duration<double>(ts).count();
 }
 
-std::string createQuery(QString hostname, QString topic)
+std::string selectQuery(QString hostname, QString topic)
 {
     return QString("SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'").toStdString();
 
 }
 
-std::string createQuery(QString hostname, QString topic, QString time)
+std::string selectQuery(QString hostname, QString topic, qint64 startTime, qint64 endTime)
 {
-    return QString().toStdString();
+    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "' AND TIME >= " +
+            QString::number(startTime) + "ms AND TIME <= " + QString::number(endTime) + "ms";
+
+    return query.toStdString();
 }
 
 QPoint plotPosition(int noOfPlots)

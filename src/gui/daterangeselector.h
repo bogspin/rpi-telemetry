@@ -17,8 +17,7 @@ public:
     explicit DateRangeSelector(QWidget *parent = nullptr);
 
 signals:
-    void allTime();
-    void timestampRange(qint64 start, qint64 end);
+    void timestampRange(qint64 start, qint64 end, bool allTime);
     void closed();
 
 private slots:
