@@ -21035,7 +21035,12 @@ void QCPGraph::setChannelFillGraph(QCPGraph *targetGraph)
 */
 void QCPGraph::setAdaptiveSampling(bool enabled)
 {
-  mAdaptiveSampling = enabled;
+    mAdaptiveSampling = enabled;
+}
+
+void QCPGraph::setGraphInfo(GraphInfo graphInfo)
+{
+    this->graphInfo = graphInfo;
 }
 
 /*! \overload

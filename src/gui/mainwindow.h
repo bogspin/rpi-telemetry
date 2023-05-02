@@ -60,11 +60,9 @@ public:
     void updatePlot(QCustomPlot *plot);
     void removePlot();
     void setPlotStyle(QCustomPlot *plot);
-    void setGraphData(QCPGraph *graph, QString hostname,
-                      QString topic = QString(),
-                      qint64 startTime = 0, qint64 endTime = 0,
-                      bool allTime = true);
+    void setGraphData(QCPGraph *graph, std::string query);
     void resizeWidgets();
+    void refreshGraphs();
 
 private slots:
     ConnectionWindow* openConnWindow();
@@ -78,6 +76,9 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QList<QWidget*> widgets;
+
+    QTimer timer;
+    qint64 refreshInterval = 300000;
 
     QFileSystemWatcher configMonitor;
     QJsonObject configObj;

@@ -33,6 +33,8 @@ set(PROJECT_SOURCES
         daterangeselector.cpp
         daterangeselector.h
         daterangeselector.ui
+        graphinfo.cpp
+        graphinfo.h
         utils.cpp
         utils.h
 )

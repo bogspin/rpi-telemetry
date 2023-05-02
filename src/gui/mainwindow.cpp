@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
                                 "color: rgb(255, 255, 255);"
                                 "}");
 
+    timer.start(refreshInterval);
+
     connect(ui->actionQuit, &QAction::triggered, this, [] {
         QApplication::quit();
     });
@@ -30,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&configMonitor, &QFileSystemWatcher::fileChanged, this, [this]() {
         populateTree();
     });
+    connect(&timer, &QTimer::timeout, this, &MainWindow::refreshGraphs);
 
     setConfigPath("../../conf.json");
     loadConfigJson();
@@ -378,12 +381,20 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 
     addPlot();
     QCustomPlot *plot = qobject_cast<QCustomPlot*>(widgets.last());
+    GraphInfo graphInfo;
 
     if (item.parent().isValid()) {
+        QCPGraph *graph = plot->addGraph();
+
         hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
         topic = configModel.data(item, Qt::DisplayRole).toString();
-        QCPGraph *graph = plot->addGraph();
-        setGraphData(graph, hostname, topic, startTime, endTime, allTime);
+        graphInfo.setHostname(hostname);
+        graphInfo.setTopic(topic);
+        if (!allTime) {
+            graphInfo.setRange(startTime);
+        }
+        graph->setGraphInfo(graphInfo);
+        setGraphData(graph, graphInfo.selectQuery());
         updatePlot(plot);
     }
     else {
@@ -393,9 +404,16 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
         int i = 0;
 
         while ((child = item.child(i, 0)).isValid()) {
-            topic = configModel.data(child, Qt::DisplayRole).toString();
             QCPGraph *graph = plot->addGraph();
-            setGraphData(graph, hostname, topic, startTime, endTime, allTime);
+
+            topic = configModel.data(child, Qt::DisplayRole).toString();
+            graphInfo.setHostname(hostname);
+            graphInfo.setTopic(topic);
+            if (!allTime) {
+                graphInfo.setRange(startTime);
+            }
+            graph->setGraphInfo(graphInfo);
+            setGraphData(graph, graphInfo.selectQuery());
             i++;
         }
         updatePlot(plot);
@@ -479,18 +497,11 @@ void MainWindow::setPlotStyle(QCustomPlot *plot)
     plot->axisRect()->setBackground(axisRectGradient);
 }
 
-void MainWindow::setGraphData(QCPGraph *graph, QString hostname, QString topic,
-                              qint64 startTime, qint64 endTime, bool allTime)
+void MainWindow::setGraphData(QCPGraph *graph, std::string query)
 {
     std::vector<influxdb::Point> records;
 
-    if (allTime) {
-        records = db->query(selectQuery(hostname, topic));
-    } else {
-        records = db->query(selectQuery(hostname, topic, startTime, endTime));
-    }
-
-    for (auto i: records) {
+    for (auto i : db->query(query)) {
         graph->addData(timestampToDouble(i.getTimestamp()), valueToDouble(i.getFields()));
     }
 
@@ -506,4 +517,22 @@ void MainWindow::resizeWidgets()
     for (int r = 0; r < ui->gridLayout->rowCount(); r++) {
         ui->gridLayout->setRowStretch(r, 1);
     }
+}
+
+void MainWindow::refreshGraphs()
+{
+    for (QWidget* widget : widgets) {
+        QCustomPlot* plot = qobject_cast<QCustomPlot*>(widget);
+
+        if (plot != nullptr) {
+            for (int i = 0; i < plot->graphCount(); i++) {
+                QCPGraph *graph = plot->graph(i);
+                GraphInfo graphInfo = graph->info();
+
+                setGraphData(graph, graphInfo.refreshQuery(refreshInterval));
+            }
+            updatePlot(plot);
+        }
+    }
+    timer.start(refreshInterval);
 }

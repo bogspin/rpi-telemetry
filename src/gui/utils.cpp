@@ -15,23 +15,8 @@ double timestampToDouble(std::chrono::time_point<std::chrono::system_clock> time
     return std::chrono::duration<double>(ts).count();
 }
 
-std::string selectQuery(QString hostname, QString topic)
-{
-    return QString("SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "'").toStdString();
-
-}
-
-std::string selectQuery(QString hostname, QString topic, qint64 startTime, qint64 endTime)
-{
-    QString query = "SELECT * FROM \"" + hostname + "\" WHERE topic='" + topic + "' AND TIME >= " +
-            QString::number(startTime) + "ms AND TIME <= " + QString::number(endTime) + "ms";
-
-    return query.toStdString();
-}
-
 QPoint plotPosition(int noOfPlots)
 {
-
     switch (noOfPlots) {
     case 0: {
         return QPoint(0, 0);

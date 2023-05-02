@@ -27,6 +27,7 @@
 #define QCUSTOMPLOT_H
 
 #include <QtCore/qglobal.h>
+#include "graphinfo.h"
 
 // some Qt version/configuration dependent macros to include or exclude certain code paths:
 #ifdef QCUSTOMPLOT_USE_OPENGL
@@ -5527,6 +5528,7 @@ public:
   int scatterSkip() const { return mScatterSkip; }
   QCPGraph *channelFillGraph() const { return mChannelFillGraph.data(); }
   bool adaptiveSampling() const { return mAdaptiveSampling; }
+  GraphInfo info() const { return graphInfo; }
   
   // setters:
   void setData(QSharedPointer<QCPGraphDataContainer> data);
@@ -5536,7 +5538,8 @@ public:
   void setScatterSkip(int skip);
   void setChannelFillGraph(QCPGraph *targetGraph);
   void setAdaptiveSampling(bool enabled);
-  
+  void setGraphInfo(GraphInfo graphInfo);
+
   // non-property methods:
   void addData(const QVector<double> &keys, const QVector<double> &values, bool alreadySorted=false);
   void addData(double key, double value);
@@ -5553,6 +5556,7 @@ protected:
   int mScatterSkip;
   QPointer<QCPGraph> mChannelFillGraph;
   bool mAdaptiveSampling;
+  GraphInfo graphInfo;
   
   // reimplemented virtual methods:
   virtual void draw(QCPPainter *painter) Q_DECL_OVERRIDE;
