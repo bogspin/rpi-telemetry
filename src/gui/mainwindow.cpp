@@ -371,7 +371,7 @@ void MainWindow::connectToDB()
 
 void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 {
-    QString hostname, topic;
+    QString hostname, topic, alias, type, unit;
     auto item = ui->configTree->currentIndex();
 
     if (!item.isValid()) {
@@ -381,43 +381,58 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 
     addPlot();
     QCustomPlot *plot = qobject_cast<QCustomPlot*>(widgets.last());
-    GraphInfo graphInfo;
 
     if (item.parent().isValid()) {
         QCPGraph *graph = plot->addGraph();
+        GraphInfo graphInfo;
 
-        hostname = configModel.data(item.parent(), Qt::DisplayRole).toString();
-        topic = configModel.data(item, Qt::DisplayRole).toString();
+        hostname = configModel.data(item.parent(), QJsonTreeItem::mItem::itemValue).toString();
+        topic = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
+        alias = configModel.data(item, QJsonTreeItem::mItem::itemAlias).toString();
+        type = configModel.data(item, QJsonTreeItem::mItem::itemType).toString();
+        unit = configModel.data(item, QJsonTreeItem::mItem::itemUnit).toString();
         graphInfo.setHostname(hostname);
         graphInfo.setTopic(topic);
+        graphInfo.setAlias(alias);
+        graphInfo.setType(type);
+        graphInfo.setUnit(unit);
         if (!allTime) {
             graphInfo.setRange(startTime);
         }
         graph->setGraphInfo(graphInfo);
+        graph->setName(alias);
         setGraphData(graph, graphInfo.selectQuery());
-        updatePlot(plot);
     }
     else {
-        hostname = configModel.data(item, Qt::DisplayRole).toString();
+        hostname = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
 
         QModelIndex child;
         int i = 0;
 
         while ((child = item.child(i, 0)).isValid()) {
             QCPGraph *graph = plot->addGraph();
+            GraphInfo graphInfo;
 
-            topic = configModel.data(child, Qt::DisplayRole).toString();
+            topic = configModel.data(child, QJsonTreeItem::mItem::itemValue).toString();
+            alias = configModel.data(child, QJsonTreeItem::mItem::itemAlias).toString();
+            type = configModel.data(child, QJsonTreeItem::mItem::itemType).toString();
+            unit = configModel.data(child, QJsonTreeItem::mItem::itemUnit).toString();
             graphInfo.setHostname(hostname);
             graphInfo.setTopic(topic);
+            graphInfo.setAlias(alias);
+            graphInfo.setType(type);
+            graphInfo.setUnit(unit);
             if (!allTime) {
                 graphInfo.setRange(startTime);
             }
             graph->setGraphInfo(graphInfo);
+            graph->setName(alias);
             setGraphData(graph, graphInfo.selectQuery());
             i++;
         }
-        updatePlot(plot);
     }
+
+    updatePlot(plot);
 }
 
 void MainWindow::addPlot()
@@ -448,12 +463,14 @@ void MainWindow::updatePlot(QCustomPlot *plot)
         QCPGraph *graph = plot->graph(i);
         bool foundRange;
         QCPRange range = graph->data()->keyRange(foundRange);
+
         if (range.size() < DAY_SECONDS * 3) {
             dateTicker->setDateTimeFormat("d/MM/yy\nHH:mm");
         } else {
             dateTicker->setDateTimeFormat("d MMMM\nyyyy");
         }
     }
+    plot->legend->setVisible(true);
     plot->xAxis->setTicker(dateTicker);
     plot->rescaleAxes();
     plot->replot();

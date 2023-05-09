@@ -7,19 +7,23 @@
             "port": 1883,
             "subscriptions": [
                 {
-                    "qos": 0,
-                    "topic": "channels/1992747/subscribe/fields/field1"
-                },
-                {
+                    "alias": "Bucuresti - umiditate",
                     "qos": 0,
                     "topic": "channels/1992747/subscribe/fields/field2"
+                },
+                {
+                    "alias": "Bucuresti - temperatura",
+                    "qos": 0,
+                    "topic": "channels/1992747/subscribe/fields/field1"
                 }
             ],
             "username": "OykJDzssDyMJHQUlDRkwMwY"
         },
         {
             "hostname": "test.mosquitto.org",
-            "port": 1883
+            "port": 1883,
+            "subscriptions": [
+            ]
         }
     ]
 }

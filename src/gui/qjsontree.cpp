@@ -75,9 +75,14 @@ void QJsonTreeItem::setAlias(const QString &alias)
     mAlias = alias;
 }
 
-void QJsonTreeItem::setType(const QJsonValue::Type &type)
+void QJsonTreeItem::setType(const QString &type)
 {
     mType = type;
+}
+
+void QJsonTreeItem::setUnit(const QString &unit)
+{
+    mUnit = unit;
 }
 
 QString QJsonTreeItem::value() const
@@ -85,15 +90,21 @@ QString QJsonTreeItem::value() const
     return mValue;
 }
 
-QVariant QJsonTreeItem::alias() const
+QString QJsonTreeItem::alias() const
 {
     return mAlias;
 }
 
-QJsonValue::Type QJsonTreeItem::type() const
+QString QJsonTreeItem::type() const
 {
     return mType;
 }
+
+QString QJsonTreeItem::unit() const
+{
+    return mUnit;
+}
+
 
 QJsonTreeItem* QJsonTreeItem::load(const QJsonValue& value, QJsonTreeItem* parent)
 {
@@ -111,9 +122,18 @@ QJsonTreeItem* QJsonTreeItem::load(const QJsonValue& value, QJsonTreeItem* paren
                     QJsonTreeItem *child = load(val, rootItem);
                     if (subs.at(index).toObject().contains("topic")) {
                         child->setValue(subs.at(index).toObject().value("topic").toString());
-                        child->setType(val.type());
-                        rootItem->appendChild(child);
+                        child->setAlias(subs.at(index).toObject().value("topic").toString());
                     }
+                    if (subs.at(index).toObject().contains("alias")) {
+                        child->setAlias(subs.at(index).toObject().value("alias").toString());
+                    }
+                    if (subs.at(index).toObject().contains("type")) {
+                        child->setType(subs.at(index).toObject().value("type").toString());
+                    }
+                    if (subs.at(index).toObject().contains("unit")) {
+                        child->setUnit(subs.at(index).toObject().value("unit").toString());
+                    }
+                    rootItem->appendChild(child);
                     ++index;
                 }
             }
@@ -121,19 +141,16 @@ QJsonTreeItem* QJsonTreeItem::load(const QJsonValue& value, QJsonTreeItem* paren
     } else if (value.isArray()) {
         //Get all QJsonValue childs
         int index = 0;
-        const QJsonArray array = value.toArray();
-        for (const QJsonValue &v : array) {
-            QJsonTreeItem *child = load(v, rootItem);
-            if (array.at(index).toObject().contains("hostname")) {
-                child->setValue(array.at(index).toObject().value("hostname").toString());
-                child->setType(v.type());
-                rootItem->appendChild(child);
+        const QJsonArray conns = value.toArray();
+        for (const QJsonValue &val : conns) {
+            QJsonTreeItem *child = load(val, rootItem);
+            if (conns.at(index).toObject().contains("hostname")) {
+                child->setValue(conns.at(index).toObject().value("hostname").toString());
+                child->setAlias(conns.at(index).toObject().value("hostname").toString());
             }
+            rootItem->appendChild(child);
             ++index;
         }
-    } else {
-        //rootItem->setValue(value.toVariant());
-        //rootItem->setType(value.type());
     }
 
     return rootItem;
@@ -163,7 +180,6 @@ bool QJsonTree::loadJson(const QJsonArray &json)
         beginResetModel();
         delete mRootItem;
         mRootItem = QJsonTreeItem::load(QJsonValue(jdoc.array()));
-        mRootItem->setType(QJsonValue::Array);
         endResetModel();
         return true;
     }
@@ -180,15 +196,23 @@ QVariant QJsonTree::data(const QModelIndex &index, int role) const
 
     QJsonTreeItem *item = static_cast<QJsonTreeItem*>(index.internalPointer());
 
-    if (role == Qt::DisplayRole) {
+    switch (role) {
+    case QJsonTreeItem::mItem::itemAlias: {
         if (index.column() == 0)
-            return QString("%1").arg(item->value());
-
-        if (index.column() == 1)
+            return item->alias();
+        }
+    case QJsonTreeItem::mItem::itemValue: {
+        if (index.column() == 0)
             return item->value();
-    } else if (Qt::EditRole == role) {
-        if (index.column() == 1)
-            return item->value();
+        }
+    case QJsonTreeItem::mItem::itemType: {
+        if (index.column() == 0)
+            return item->type();
+        }
+    case QJsonTreeItem::mItem::itemUnit: {
+        if (index.column() == 0)
+            return item->unit();
+        }
     }
 
     return {};

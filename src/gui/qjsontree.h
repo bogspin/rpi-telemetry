@@ -35,6 +35,13 @@
 class QJsonTreeItem
 {
 public:
+    enum mItem {
+        itemAlias = 0,
+        itemValue,
+        itemType,
+        itemUnit
+    };
+
     QJsonTreeItem(QJsonTreeItem *parent = nullptr);
     ~QJsonTreeItem();
     void appendChild(QJsonTreeItem *item);
@@ -44,10 +51,12 @@ public:
     int row() const;
     void setValue(const QString& value);
     void setAlias(const QString& alias);
-    void setType(const QJsonValue::Type& type);
+    void setType(const QString& type);
+    void setUnit(const QString& unit);
     QString value() const;
-    QVariant alias() const;
-    QJsonValue::Type type() const;
+    QString alias() const;
+    QString type() const;
+    QString unit() const;
 
     static QJsonTreeItem* load(const QJsonValue& value, QJsonTreeItem *parent = nullptr);
 
@@ -56,7 +65,8 @@ protected:
 private:
     QString mValue;
     QString mAlias;
-    QJsonValue::Type mType;
+    QString mType;
+    QString mUnit;
     QList<QJsonTreeItem*> mChilds;
     QJsonTreeItem *mParent = nullptr;
 };

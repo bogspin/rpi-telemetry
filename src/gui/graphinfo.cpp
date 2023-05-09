@@ -28,10 +28,50 @@ void GraphInfo::setTopic(QString topic)
     this->topic = topic;
 }
 
+void GraphInfo::setAlias(QString alias)
+{
+    this->alias = alias;
+}
+
+void GraphInfo::setType(QString type)
+{
+    this->type = type;
+}
+
+void GraphInfo::setUnit(QString unit)
+{
+    this->unit = unit;
+}
+
 void GraphInfo::setRange(qint64 startTime, qint64 endTime)
 {
     this->startTime = startTime;
     this->endTime = endTime;
+}
+
+QString GraphInfo::getHostname() const
+{
+    return this->hostname;
+}
+
+QString GraphInfo::getTopic() const
+{
+    return this->topic;
+}
+
+QString GraphInfo::getAlias() const
+{
+    return this->alias;
+}
+
+QString GraphInfo::getType() const
+{
+    return this->type;
+}
+
+QString GraphInfo::getUnit() const
+{
+    return this->unit;
 }
 
 std::string GraphInfo::selectQuery()
