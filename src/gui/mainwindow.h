@@ -29,6 +29,13 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+enum graphColor {
+    white = 0,
+    magenta,
+    cyan,
+    red
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -61,6 +68,7 @@ public:
     void removePlot();
     void setPlotStyle(QCustomPlot *plot);
     void setGraphData(QCPGraph *graph, std::string query);
+    void setGraphColor(QCPGraph *graph, graphColor color);
     void resizeWidgets();
     void refreshGraphs();
     void updateLayout();

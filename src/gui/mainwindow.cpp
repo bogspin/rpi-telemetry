@@ -397,6 +397,7 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
         graph->setGraphInfo(graphInfo);
         graph->setName(createGraphName(alias, unit));
         setGraphData(graph, graphInfo.selectQuery());
+        setGraphColor(graph, graphColor::white);
     }
     else {
         hostname = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
@@ -423,6 +424,7 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
             graph->setGraphInfo(graphInfo);
             graph->setName(createGraphName(alias, unit));
             setGraphData(graph, graphInfo.selectQuery());
+            setGraphColor(graph, static_cast<graphColor>(i));
             i++;
         }
     }
@@ -470,7 +472,6 @@ void MainWindow::removePlot() {
     if (plot->close()) {
         delete plot;
     }
-
     updateLayout();
 }
 
@@ -515,9 +516,37 @@ void MainWindow::setGraphData(QCPGraph *graph, std::string query)
     for (auto i : db->query(query)) {
         graph->addData(timestampToDouble(i.getTimestamp()), valueToDouble(i.getFields()));
     }
+}
 
-    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::white), 10));
-    graph->setPen(QPen(QColor(180, 180, 180), 4));
+void MainWindow::setGraphColor(QCPGraph *graph, graphColor color)
+{
+    switch (color) {
+    case graphColor::white: {
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::white), 6));
+        graph->setPen(QPen(QColor(180, 180, 180), 3));
+        break;
+    }
+    case graphColor::magenta: {
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::darkMagenta), 6));
+        graph->setPen(QPen(QColor(187, 134, 252), 3));
+        break;
+    }
+    case graphColor::cyan: {
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::darkCyan), 6));
+        graph->setPen(QPen(QColor(3, 218, 198), 3));
+        break;
+    }
+    case graphColor::red: {
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::darkRed), 6));
+        graph->setPen(QPen(QColor(207, 102, 121), 3));
+        break;
+    }
+    default: {
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(Qt::black, 1), QBrush(Qt::white), 6));
+        graph->setPen(QPen(QColor(180, 180, 180), 3));
+        break;
+    }
+    }
 }
 
 void MainWindow::resizeWidgets()
@@ -541,6 +570,7 @@ void MainWindow::refreshGraphs()
                 GraphInfo graphInfo = graph->info();
 
                 setGraphData(graph, graphInfo.refreshQuery(refreshInterval));
+                setGraphColor(graph, static_cast<graphColor>(i));
             }
             updatePlot(plot);
         }
