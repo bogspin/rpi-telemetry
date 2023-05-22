@@ -63,6 +63,7 @@ public:
     void setGraphData(QCPGraph *graph, std::string query);
     void resizeWidgets();
     void refreshGraphs();
+    void updateLayout();
 
 private slots:
     ConnectionWindow* openConnWindow();

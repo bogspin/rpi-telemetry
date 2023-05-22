@@ -73,9 +73,7 @@ void MainWindow::serviceStatus()
         QMessageBox::warning(this, "Error", "Failed to check service status!");
     }
 
-    QPoint gridPos = plotPosition(widgets.size());
     QTextBrowser *status = new QTextBrowser(this);
-    QVBoxLayout *verticalLayout = new QVBoxLayout();
     QString statusText;
 
     while (fgets(path, sizeof(path), fp) != NULL) {
@@ -84,11 +82,8 @@ void MainWindow::serviceStatus()
 
     status->setText(statusText);
     status->setStyleSheet("color: rgb(255, 255, 255);");
-    verticalLayout->addWidget(status);
-    ui->gridLayout->addLayout(verticalLayout, gridPos.x(), gridPos.y());
-
     widgets.append(status);
-    resizeWidgets();
+    updateLayout();
 
     pclose(fp);
 }
@@ -397,10 +392,10 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
         graphInfo.setType(type);
         graphInfo.setUnit(unit);
         if (!allTime) {
-            graphInfo.setRange(startTime);
+            graphInfo.setRange(startTime, endTime);
         }
         graph->setGraphInfo(graphInfo);
-        graph->setName(alias);
+        graph->setName(createGraphName(alias, unit));
         setGraphData(graph, graphInfo.selectQuery());
     }
     else {
@@ -423,10 +418,10 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
             graphInfo.setType(type);
             graphInfo.setUnit(unit);
             if (!allTime) {
-                graphInfo.setRange(startTime);
+                graphInfo.setRange(startTime, endTime);
             }
             graph->setGraphInfo(graphInfo);
-            graph->setName(alias);
+            graph->setName(createGraphName(alias, unit));
             setGraphData(graph, graphInfo.selectQuery());
             i++;
         }
@@ -438,21 +433,11 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 void MainWindow::addPlot()
 {
     QCustomPlot *plot = new QCustomPlot();
-    QPoint gridPos = plotPosition(widgets.size());
 
+    connect(plot, &QCustomPlot::mouseDoubleClick, this, &MainWindow::removePlot);
     widgets.append(plot);
-    QVBoxLayout *verticalLayout = new QVBoxLayout();
-    QToolBar *bar = new QToolBar();
-    QAction *closePlot = new QAction("Close");
-    connect(closePlot, &QAction::triggered, this, &MainWindow::removePlot);
-    bar->setStyleSheet("background-color: #505050;"
-                       "color: #FFFFFF;");
-    bar->addAction(closePlot);
-    // verticalLayout->addWidget(bar);
-    verticalLayout->addWidget(plot);
-    ui->gridLayout->addLayout(verticalLayout, gridPos.x(), gridPos.y());
     setPlotStyle(plot);
-    resizeWidgets();
+    updateLayout();
 }
 
 void MainWindow::updatePlot(QCustomPlot *plot)
@@ -465,7 +450,7 @@ void MainWindow::updatePlot(QCustomPlot *plot)
         QCPRange range = graph->data()->keyRange(foundRange);
 
         if (range.size() < DAY_SECONDS * 3) {
-            dateTicker->setDateTimeFormat("d/MM/yy\nHH:mm");
+            dateTicker->setDateTimeFormat("d/M/yy\nHH:mm");
         } else {
             dateTicker->setDateTimeFormat("d MMMM\nyyyy");
         }
@@ -477,7 +462,16 @@ void MainWindow::updatePlot(QCustomPlot *plot)
 }
 
 void MainWindow::removePlot() {
-    qDebug() << "SADSAFSAFS";
+    QCustomPlot* plot = qobject_cast<QCustomPlot*>(sender());
+
+    plot->clearGraphs();
+    widgets.removeOne(plot);
+    ui->gridLayout->removeWidget(plot);
+    if (plot->close()) {
+        delete plot;
+    }
+
+    updateLayout();
 }
 
 void MainWindow::setPlotStyle(QCustomPlot *plot)
@@ -552,4 +546,16 @@ void MainWindow::refreshGraphs()
         }
     }
     timer.start(refreshInterval);
+}
+
+void MainWindow::updateLayout()
+{
+    QPoint gridPos;
+
+    for (int i = 0; i < widgets.size(); i++) {
+        gridPos = plotPosition(i);
+        ui->gridLayout->addWidget(widgets.at(i), gridPos.x(), gridPos.y());
+    }
+
+    resizeWidgets();
 }

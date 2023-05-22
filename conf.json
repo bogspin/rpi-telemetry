@@ -14,7 +14,9 @@
                 {
                     "alias": "Bucuresti - temperatura",
                     "qos": 0,
-                    "topic": "channels/1992747/subscribe/fields/field1"
+                    "topic": "channels/1992747/subscribe/fields/field1",
+                    "type": "temperature",
+                    "unit": "°C"
                 }
             ],
             "username": "OykJDzssDyMJHQUlDRkwMwY"

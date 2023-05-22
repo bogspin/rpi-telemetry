@@ -33,3 +33,15 @@ QPoint plotPosition(int noOfPlots)
     default: return QPoint(0, 0);
     }
 }
+
+QString createGraphName(QString alias, QString unit)
+{
+    if (alias.size() > MAX_LEGEND_LENGTH) {
+        alias.truncate(MAX_LEGEND_LENGTH);
+        alias.append("...");
+    }
+    if (unit.isEmpty())
+        return alias;
+    else
+        return QString(alias + " [" + unit + "]");
+}
