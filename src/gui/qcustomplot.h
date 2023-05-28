@@ -5539,6 +5539,7 @@ public:
   void setChannelFillGraph(QCPGraph *targetGraph);
   void setAdaptiveSampling(bool enabled);
   void setGraphInfo(GraphInfo graphInfo);
+  GraphInfo getGraphInfo() const;
 
   // non-property methods:
   void addData(const QVector<double> &keys, const QVector<double> &values, bool alreadySorted=false);

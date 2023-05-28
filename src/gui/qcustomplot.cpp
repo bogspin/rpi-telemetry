@@ -21043,6 +21043,11 @@ void QCPGraph::setGraphInfo(GraphInfo graphInfo)
     this->graphInfo = graphInfo;
 }
 
+GraphInfo QCPGraph::getGraphInfo() const
+{
+    return this->graphInfo;
+}
+
 /*! \overload
   
   Adds the provided points in \a keys and \a values to the current data. The provided vectors

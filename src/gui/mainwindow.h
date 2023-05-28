@@ -73,6 +73,9 @@ public:
     void refreshGraphs();
     void updateLayout();
 
+    void exportCSV();
+    void exportPNG();
+
 private slots:
     ConnectionWindow* openConnWindow();
     SubscriptionWindow* openSubWindow();

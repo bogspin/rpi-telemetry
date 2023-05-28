@@ -173,8 +173,20 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionQuit"/>
+    <widget class="QMenu" name="menuExport">
+     <property name="styleSheet">
+      <string notr="true">color: rgb(255, 255, 255);</string>
+     </property>
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="actionas_CSV"/>
+     <addaction name="actionas_PNG"/>
+    </widget>
     <addaction name="separator"/>
+    <addaction name="menuExport"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuService">
     <property name="title">
@@ -220,6 +232,16 @@
   <action name="actionStatus">
    <property name="text">
     <string>Status</string>
+   </property>
+  </action>
+  <action name="actionas_CSV">
+   <property name="text">
+    <string>as CSV</string>
+   </property>
+  </action>
+  <action name="actionas_PNG">
+   <property name="text">
+    <string>as PNG</string>
    </property>
   </action>
  </widget>

@@ -15,6 +15,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     timer.start(refreshInterval);
 
+    connect(ui->actionas_CSV, &QAction::triggered, this, &MainWindow::exportCSV);
+    connect(ui->actionas_PNG, &QAction::triggered, this, &MainWindow::exportPNG);
     connect(ui->actionQuit, &QAction::triggered, this, [] {
         QApplication::quit();
     });
@@ -588,4 +590,50 @@ void MainWindow::updateLayout()
     }
 
     resizeWidgets();
+}
+
+void MainWindow::exportCSV()
+{
+    if (widgets.isEmpty()) {
+        QMessageBox::warning(this, "Error", "There is no plotted data to be saved!");
+        return;
+    }
+
+    QString dirPath = QFileDialog::getExistingDirectory(this,
+                                                        "Select save location",
+                                                        QDir::currentPath());
+    for (auto w : widgets) {
+        QCustomPlot *plot;
+        if ((plot = qobject_cast<QCustomPlot*>(w)) != nullptr) {
+            for (int i = 0; i < plot->graphCount(); i++) {
+                QCPGraph* graph = plot->graph(i);
+                QString fileName = graph->getGraphInfo().getAlias() + ".csv";
+                QFile saveFile;
+                QTextStream out(&saveFile);
+
+                saveFile.setFileName(dirPath + "/" + fileName);
+                if (!saveFile.open(QIODevice::WriteOnly)) {
+                    QString errMsg = "Could not save " + fileName;
+                    QMessageBox::critical(this, "Error", errMsg);
+                    continue;
+                }
+                auto graphData = graph->data();
+                QCPDataContainer<QCPGraphData>::iterator it;
+
+                for (it = graphData->begin(); it != graphData->end(); it++) {
+                    out << it->key;
+                    out << ',';
+                    out << it->value;
+                    out << ',';
+                }
+                /* remove last comma */
+                saveFile.resize(saveFile.size() - 1);
+            }
+        }
+    }
+}
+
+void MainWindow::exportPNG()
+{
+
 }
