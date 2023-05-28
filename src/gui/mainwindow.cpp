@@ -595,7 +595,7 @@ void MainWindow::updateLayout()
 void MainWindow::exportCSV()
 {
     if (widgets.isEmpty()) {
-        QMessageBox::warning(this, "Error", "There is no plotted data to be saved!");
+        QMessageBox::warning(this, "Error", "No plots to be exported!");
         return;
     }
 
@@ -635,5 +635,20 @@ void MainWindow::exportCSV()
 
 void MainWindow::exportPNG()
 {
+    if (widgets.isEmpty()) {
+        QMessageBox::warning(this, "Error", "No plots to be exported!");
+        return;
+    }
 
+    QString dirPath = QFileDialog::getExistingDirectory(this,
+                                                        "Select save location",
+                                                        QDir::currentPath());
+    int i = 1;
+    for (auto w : widgets) {
+        QCustomPlot *plot;
+        if ((plot = qobject_cast<QCustomPlot*>(w)) != nullptr) {
+            QString fileName = "plot_" + QString::number(i++);
+            plot->savePng(fileName, 800, 600);
+        }
+    }
 }
