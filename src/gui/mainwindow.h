@@ -72,6 +72,7 @@ public:
     void resizeWidgets();
     void refreshGraphs();
     void updateLayout();
+    void toggleLegend();
 
     void exportCSV();
     void exportPNG();

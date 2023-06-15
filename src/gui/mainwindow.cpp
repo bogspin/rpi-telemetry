@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->menuFile->setStyleSheet("QMenu::item{"
                                 "color: rgb(255, 255, 255);"
                                 "}");
+    ui->configTree->setSelectionMode(QAbstractItemView::SelectionMode::MultiSelection);
 
     timer.start(refreshInterval);
 
@@ -369,52 +370,35 @@ void MainWindow::connectToDB()
 void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
 {
     QString hostname, topic, alias, type, unit;
-    auto item = ui->configTree->currentIndex();
-
-    if (!item.isValid()) {
-        QMessageBox::warning(this, "No selections", "First click on a topic to plot its logged data!");
-        return;
-    }
+    int colorIndex = 0;
+    auto selectedTopics = ui->configTree->selectionModel()->selectedIndexes();
 
     addPlot();
     QCustomPlot *plot = qobject_cast<QCustomPlot*>(widgets.last());
 
-    if (item.parent().isValid()) {
-        QCPGraph *graph = plot->addGraph();
-        GraphInfo graphInfo;
+    for (auto item : selectedTopics) {
+        if (!item.parent().isValid()) {
+            QModelIndex child;
+            int i = 0;
 
-        hostname = configModel.data(item.parent(), QJsonTreeItem::mItem::itemValue).toString();
-        topic = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
-        alias = configModel.data(item, QJsonTreeItem::mItem::itemAlias).toString();
-        type = configModel.data(item, QJsonTreeItem::mItem::itemType).toString();
-        unit = configModel.data(item, QJsonTreeItem::mItem::itemUnit).toString();
-        graphInfo.setHostname(hostname);
-        graphInfo.setTopic(topic);
-        graphInfo.setAlias(alias);
-        graphInfo.setType(type);
-        graphInfo.setUnit(unit);
-        if (!allTime) {
-            graphInfo.setRange(startTime, endTime);
+            while ((child = item.child(i, 0)).isValid()) {
+                if (!selectedTopics.contains(child)) {
+                    selectedTopics.append(child);
+                }
+                i++;
+            }
         }
-        graph->setGraphInfo(graphInfo);
-        graph->setName(createGraphName(alias, unit));
-        setGraphData(graph, graphInfo.selectQuery());
-        setGraphColor(graph, graphColor::white);
     }
-    else {
-        hostname = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
-
-        QModelIndex child;
-        int i = 0;
-
-        while ((child = item.child(i, 0)).isValid()) {
+    for (auto item : selectedTopics) {
+        if (item.parent().isValid()) {
             QCPGraph *graph = plot->addGraph();
             GraphInfo graphInfo;
 
-            topic = configModel.data(child, QJsonTreeItem::mItem::itemValue).toString();
-            alias = configModel.data(child, QJsonTreeItem::mItem::itemAlias).toString();
-            type = configModel.data(child, QJsonTreeItem::mItem::itemType).toString();
-            unit = configModel.data(child, QJsonTreeItem::mItem::itemUnit).toString();
+            hostname = configModel.data(item.parent(), QJsonTreeItem::mItem::itemValue).toString();
+            topic = configModel.data(item, QJsonTreeItem::mItem::itemValue).toString();
+            alias = configModel.data(item, QJsonTreeItem::mItem::itemAlias).toString();
+            type = configModel.data(item, QJsonTreeItem::mItem::itemType).toString();
+            unit = configModel.data(item, QJsonTreeItem::mItem::itemUnit).toString();
             graphInfo.setHostname(hostname);
             graphInfo.setTopic(topic);
             graphInfo.setAlias(alias);
@@ -426,8 +410,7 @@ void MainWindow::plotMeasurement(qint64 startTime, qint64 endTime, bool allTime)
             graph->setGraphInfo(graphInfo);
             graph->setName(createGraphName(alias, unit));
             setGraphData(graph, graphInfo.selectQuery());
-            setGraphColor(graph, static_cast<graphColor>(i));
-            i++;
+            setGraphColor(graph, static_cast<graphColor>(colorIndex++));
         }
     }
 
@@ -439,6 +422,7 @@ void MainWindow::addPlot()
     QCustomPlot *plot = new QCustomPlot();
 
     connect(plot, &QCustomPlot::mouseDoubleClick, this, &MainWindow::removePlot);
+    connect(plot, &QCustomPlot::mousePress, this, &MainWindow::toggleLegend);
     widgets.append(plot);
     setPlotStyle(plot);
     updateLayout();
@@ -459,7 +443,6 @@ void MainWindow::updatePlot(QCustomPlot *plot)
             dateTicker->setDateTimeFormat("d MMMM\nyyyy");
         }
     }
-    plot->legend->setVisible(true);
     plot->xAxis->setTicker(dateTicker);
     plot->rescaleAxes();
     plot->replot();
@@ -590,6 +573,14 @@ void MainWindow::updateLayout()
     }
 
     resizeWidgets();
+}
+
+void MainWindow::toggleLegend()
+{
+    QCustomPlot* plot = qobject_cast<QCustomPlot*>(sender());
+
+    plot->legend->setVisible(!plot->legend->visible());
+    plot->replot();
 }
 
 void MainWindow::exportCSV()

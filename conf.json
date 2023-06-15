@@ -9,7 +9,9 @@
                 {
                     "alias": "Bucuresti - umiditate",
                     "qos": 0,
-                    "topic": "channels/1992747/subscribe/fields/field2"
+                    "topic": "channels/1992747/subscribe/fields/field2",
+                    "type": "humidity",
+                    "unit": "%"
                 },
                 {
                     "alias": "Bucuresti - temperatura",
@@ -17,6 +19,41 @@
                     "topic": "channels/1992747/subscribe/fields/field1",
                     "type": "temperature",
                     "unit": "°C"
+                },
+                {
+                    "alias": "Germany BW - air quality PM2.5",
+                    "qos": 0,
+                    "topic": "channels/357142/subscribe/fields/field1",
+                    "type": "air_quality",
+                    "unit": "µg/m3"
+                },
+                {
+                    "alias": "Germany BW - temperature",
+                    "qos": 0,
+                    "topic": "channels/357142/subscribe/fields/field3",
+                    "type": "temperature",
+                    "unit": "°C"
+                },
+                {
+                    "alias": "Germany BW - air pressure 300m",
+                    "qos": 0,
+                    "topic": "channels/357142/subscribe/fields/field4",
+                    "type": "pressure",
+                    "unit": "hPa"
+                },
+                {
+                    "alias": "Ploiesti - temperatura",
+                    "qos": 0,
+                    "topic": "channels/777096/subscribe/fields/field1",
+                    "type": "temperature",
+                    "unit": "°C"
+                },
+                {
+                    "alias": "Ploiesti - dioxid de carbon",
+                    "qos": 1,
+                    "topic": "channels/777096/subscribe/fields/field4",
+                    "type": "CO2",
+                    "unit": "ppm"
                 }
             ],
             "username": "OykJDzssDyMJHQUlDRkwMwY"
