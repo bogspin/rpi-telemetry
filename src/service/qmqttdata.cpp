@@ -25,6 +25,7 @@ void QMqttData::onConnect()
 void QMqttData::onDisconnect()
 {
     emit clientDisconnected(this);
+    client->connectToHost();
 }
 
 void QMqttData::sendMessage(QMqttMessage msg)

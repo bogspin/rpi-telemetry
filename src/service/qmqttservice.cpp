@@ -68,8 +68,7 @@ void QMqttService::startService()
                 QJsonArray subs = conn.value("subscriptions").toArray();
 
                 connect(newConn, &QMqttData::clientConnected, this, [this, newConn, subs](){
-                    connect(this, &QMqttService::hasSubs, this, &QMqttService::addSubscriptions);
-                    emit hasSubs(newConn, subs);
+                    addSubscriptions(newConn, subs);
                 });
             }
         }

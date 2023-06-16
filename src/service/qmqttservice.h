@@ -34,9 +34,6 @@ private:
     QList<QMqttData*> mqttConnections;
     std::unique_ptr<influxdb::InfluxDB> db;
     QFileSystemWatcher configFile;
-
-signals:
-    void hasSubs(QMqttData* conn, const QJsonArray &subs);
 };
 
 #endif // QMQTTSERVICE_H
